@@ -53,6 +53,38 @@ stop_timeout:
 stop_done:
 FunctionEnd
 
+Function un.onInit
+  ; For an uninstaller, NSIS initializes $INSTDIR to the directory containing
+  ; this uninstaller. Stop the installed app before the uninstall section runs.
+  Call un.StopExistingApp
+FunctionEnd
+
+Function un.StopExistingApp
+  IfFileExists "${APP_EXE}" 0 un_stop_done
+  ExecWait '"${APP_EXE}" --quit-existing'
+  StrCpy $0 0
+
+un_stop_try:
+  IfFileExists "${APP_EXE}" 0 un_stop_done
+  ClearErrors
+  Delete "${APP_EXE}"
+  IfErrors un_stop_wait un_stop_done
+
+un_stop_wait:
+  IntOp $0 $0 + 1
+  IntCmp $0 ${STOP_RETRIES} un_stop_timeout un_stop_sleep un_stop_timeout
+
+un_stop_sleep:
+  Sleep ${STOP_INTERVAL_MS}
+  Goto un_stop_try
+
+un_stop_timeout:
+  MessageBox MB_ICONSTOP|MB_OK "기존 실행 중인 앱을 종료하거나 파일 잠금을 해제하지 못했습니다.$\r$\n설치 또는 제거를 중단합니다. 앱을 직접 종료한 뒤 다시 시도해 주세요."
+  Abort
+
+un_stop_done:
+FunctionEnd
+
 Section "Install"
   SetOutPath "$INSTDIR"
   File "..\target\release\shift-space-lang-change.exe"
@@ -79,7 +111,7 @@ Section "Install"
 SectionEnd
 
 Section "Uninstall"
-  ; .onInit has already stopped and deleted the executable. Only metadata and
+  ; un.onInit has already stopped and deleted the executable. Only metadata and
   ; the now-unlocked remaining files are removed here.
   DeleteRegValue HKCU "${RUN_KEY}" "${RUN_VALUE}"
   DeleteRegKey HKCU "Software\ShiftSpaceLangChange"
