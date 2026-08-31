@@ -1,5 +1,5 @@
 use crate::config::{AppSettings, Hotkey};
-use crate::ui_model::{IDM_EXIT, IDM_SHOW, UiEvent, map_tray_command};
+use crate::ui_model::{IDM_EXIT, IDM_SHOW, UiEvent, map_tray_command, tray_event_code};
 
 use super::super::error::Win32Error;
 use super::window::WM_APP_TRAY;
@@ -47,9 +47,10 @@ impl TrayIcon {
         // Safety: the same notification record identifies the icon just added; no Rust pointer
         // is retained by the shell.
         if !unsafe { Shell_NotifyIconW(NIM_SETVERSION, &data) }.as_bool() {
+            let error = last_error();
             // Best effort cleanup keeps a failed installation from leaving a stale icon.
             let _ = unsafe { Shell_NotifyIconW(NIM_DELETE, &data) };
-            return Err(last_error());
+            return Err(error);
         }
         Ok(Self {
             data,
@@ -64,7 +65,7 @@ impl TrayIcon {
         lparam: isize,
         settings: AppSettings,
     ) -> Result<Option<UiEvent>, Win32Error> {
-        let event = lparam as u32;
+        let event = tray_event_code(lparam);
         if event == WM_LBUTTONDBLCLK {
             return Ok(Some(UiEvent::Show));
         }

@@ -36,3 +36,8 @@ pub fn map_tray_command(id: usize) -> Option<UiEvent> {
         _ => None,
     }
 }
+
+/// Return the notification mouse event from the LOWORD of a version-4 tray callback lParam.
+pub const fn tray_event_code(lparam: isize) -> u32 {
+    (lparam as u32) & 0xffff
+}

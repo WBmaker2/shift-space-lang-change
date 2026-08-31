@@ -2,6 +2,7 @@ use crate::config::AppSettings;
 use crate::launch::{WINDOW_CLASS, WM_APP_REQUEST_EXIT_ID};
 use crate::ui_model::{
     IDC_CTRL_SPACE, IDC_HIDE, IDC_SHIFT_SPACE, IDC_STARTUP, UiEvent, map_command, map_tray_command,
+    tray_event_code,
 };
 
 use super::super::error::Win32Error;
@@ -13,9 +14,9 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY;
 use windows::Win32::UI::WindowsAndMessaging::{
     BM_GETCHECK, BM_SETCHECK, BN_CLICKED, BS_AUTOCHECKBOX, BS_PUSHBUTTON, CS_HREDRAW, CS_VREDRAW,
-    CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, IDC_ARROW, IDI_APPLICATION, LoadCursorW,
-    LoadIconW, MSG, RegisterClassExW, SW_HIDE, WINDOW_EX_STYLE, WINDOW_STYLE, WM_APP, WM_CLOSE,
-    WM_COMMAND, WM_KEYDOWN, WNDCLASSEXW, WS_CAPTION, WS_CHILD, WS_CLIPCHILDREN,
+    CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DestroyWindow, IDC_ARROW, IDI_APPLICATION,
+    LoadCursorW, LoadIconW, MSG, RegisterClassExW, SW_HIDE, WINDOW_EX_STYLE, WINDOW_STYLE, WM_APP,
+    WM_CLOSE, WM_COMMAND, WM_KEYDOWN, WNDCLASSEXW, WS_CAPTION, WS_CHILD, WS_CLIPCHILDREN,
     WS_EX_CONTROLPARENT, WS_MINIMIZEBOX, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
 };
 use windows::core::{PCWSTR, w};
@@ -47,9 +48,7 @@ pub fn create_settings_window() -> Result<UiHandles, Win32Error> {
             WINDOW_EX_STYLE(WS_EX_CONTROLPARENT.0),
             PCWSTR(class_name.as_ptr()),
             PCWSTR(title.as_ptr()),
-            WINDOW_STYLE(
-                WS_CAPTION.0 | WS_SYSMENU.0 | WS_MINIMIZEBOX.0 | WS_CLIPCHILDREN.0 | WS_VISIBLE.0,
-            ),
+            WINDOW_STYLE(WS_CAPTION.0 | WS_SYSMENU.0 | WS_MINIMIZEBOX.0 | WS_CLIPCHILDREN.0),
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             420,
@@ -61,6 +60,7 @@ pub fn create_settings_window() -> Result<UiHandles, Win32Error> {
         )
     }
     .map_err(win_error)?;
+    let window_guard = WindowGuard { hwnd };
 
     let status = create_control(
         hwnd,
@@ -142,7 +142,7 @@ pub fn create_settings_window() -> Result<UiHandles, Win32Error> {
     )?;
     let _ = hint;
     Ok(UiHandles {
-        hwnd,
+        hwnd: window_guard.into_hwnd(),
         shift_space,
         ctrl_space,
         startup,
@@ -189,7 +189,8 @@ pub fn read_ui_event(message: &MSG) -> Option<UiEvent> {
         WM_KEYDOWN if message.wParam.0 == VIRTUAL_KEY(0x1b).0 as usize => Some(UiEvent::Hide),
         WM_APP_REQUEST_EXIT_ID => Some(UiEvent::Exit),
         WM_APP_TRAY => {
-            if message.lParam.0 as u32 == windows::Win32::UI::WindowsAndMessaging::WM_LBUTTONDBLCLK
+            if tray_event_code(message.lParam.0)
+                == windows::Win32::UI::WindowsAndMessaging::WM_LBUTTONDBLCLK
             {
                 Some(UiEvent::Show)
             } else {
@@ -197,6 +198,28 @@ pub fn read_ui_event(message: &MSG) -> Option<UiEvent> {
             }
         }
         _ => None,
+    }
+}
+
+struct WindowGuard {
+    hwnd: HWND,
+}
+
+impl WindowGuard {
+    fn into_hwnd(mut self) -> HWND {
+        let hwnd = self.hwnd;
+        self.hwnd = HWND::default();
+        hwnd
+    }
+}
+
+impl Drop for WindowGuard {
+    fn drop(&mut self) {
+        if !self.hwnd.0.is_null() {
+            // Safety: the guard owns the top-level HWND created by create_settings_window; this
+            // best-effort cleanup runs only on a failed child-control construction path.
+            let _ = unsafe { DestroyWindow(self.hwnd) };
+        }
     }
 }
 

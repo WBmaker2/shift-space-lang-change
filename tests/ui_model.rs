@@ -1,7 +1,7 @@
 use shift_space_lang_change::config::Hotkey;
 use shift_space_lang_change::ui_model::{
     IDC_CTRL_SPACE, IDC_HIDE, IDC_SHIFT_SPACE, IDC_STARTUP, IDM_EXIT, IDM_SHOW, UiEvent,
-    map_command, map_tray_command,
+    map_command, map_tray_command, tray_event_code,
 };
 
 #[test]
@@ -31,4 +31,10 @@ fn tray_commands_map_to_show_and_exit() {
 fn unknown_commands_are_ignored() {
     assert_eq!(map_command(9999, true), None);
     assert_eq!(map_tray_command(9999), None);
+}
+
+#[test]
+fn tray_event_code_uses_low_word_for_notify_icon_version_four() {
+    let lparam = (0x0042_u32 << 16 | 0x0203_u32) as isize;
+    assert_eq!(tray_event_code(lparam), 0x0203);
 }
