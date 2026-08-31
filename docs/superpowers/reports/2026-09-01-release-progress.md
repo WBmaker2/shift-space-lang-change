@@ -25,9 +25,22 @@
 - 태그의 `v*` push trigger로 Windows package workflow를 실행하고 `0.1.0-rc.1` 설치 파일을 HVC 대상으로 사용한다.
 - 최종 `v0.1.0` 태그와 GitHub Release는 HVC 통과 뒤에만 만든다.
 
+## RC.1 package 실패와 수정 계획
+
+- package run `33411729703`은 Rust 테스트, clippy, release EXE 빌드까지 통과했지만 NSIS 단계에서 실패했다.
+- 원인은 Chocolatey로 NSIS를 설치한 뒤 현재 PowerShell 세션의 `PATH`가 갱신되지 않아 `makensis` 명령을 찾지 못한 것이다.
+- workflow에서 Chocolatey 기본 NSIS 설치 위치를 포함한 후보 경로를 탐색하고 `makensis.exe` 존재 여부를 검증한 뒤 절대 경로로 실행한다.
+- 수정은 별도 구현·리뷰·검증을 거쳐 기능 브랜치에 push하고, 기존 RC.1 태그는 보존한 채 `v0.1.0-rc.2` 태그로 package workflow를 다시 실행한다.
+
+## RC.1 package 수정 결과
+
+- 수정 커밋: `e69e5c9843eac2e06c16e5086e225a39a37a32ae`
+- `makensis.exe` 후보를 고정된 신뢰 경로에서 탐색하고, 파일 존재와 이름을 확인한 뒤 `GITHUB_ENV`로 절대 경로를 다음 단계에 전달한다.
+- 별도 Luna 리뷰 결과: APPROVED. PowerShell 호출 연산자, 공백 포함 경로, 환경 전달, YAML 구조, 패키지 출력 회귀를 점검했다.
+- RC.2 package workflow의 실제 Windows runner 성공 여부를 다음 게이트로 확인한다.
+
 ## 아직 미완료
 
 - Windows package artifact 생성·다운로드·SHA-256 기록
 - Windows 10/11 x64 한국어 Microsoft IME 실기기 HVC
 - HVC 통과 후 `main` 병합, 최종 CI, `v0.1.0` tag/release
-
