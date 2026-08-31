@@ -16,27 +16,15 @@ use crate::ui_model::UiEvent;
 use crate::windows_mapping::hotkey_spec;
 
 use super::error::Win32Error;
+use super::timer::{TimerGuard, should_process_timer};
 use super::ui::window::WM_APP_TRAY;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
-    DispatchMessageW, GetMessageW, IsDialogMessageW, KillTimer, MB_ICONERROR, MB_OK, MSG,
-    MessageBoxW, PostQuitMessage, SW_HIDE, SW_SHOW, SetForegroundWindow, ShowWindow,
-    TranslateMessage, WM_DESTROY, WM_HOTKEY, WM_TIMER,
+    DispatchMessageW, GetMessageW, IsDialogMessageW, MB_ICONERROR, MB_OK, MSG, MessageBoxW,
+    PostQuitMessage, SW_HIDE, SW_SHOW, SetForegroundWindow, ShowWindow, TranslateMessage,
+    WM_DESTROY, WM_HOTKEY, WM_TIMER,
 };
 use windows::core::PCWSTR;
-
-const TIMER_ID: usize = 0x5103;
-const TIMER_INTERVAL_MS: u32 = 15;
-
-fn next_generation_id(current: usize) -> usize {
-    let mut candidate = current.wrapping_add(1);
-    loop {
-        if candidate != 0 && candidate != 0x5101 && candidate != 0x5102 {
-            return candidate;
-        }
-        candidate = candidate.wrapping_add(1);
-    }
-}
 
 type Controller =
     AppController<WinHotkeyBackend, RegistrySettingsStore, WinStartupController, WinImeSender>;
@@ -60,10 +48,19 @@ pub fn run(mode: LaunchMode) -> Result<i32, Win32Error> {
     let settings_store = RegistrySettingsStore::new();
     let (hotkeys, initial_status) = match load_hotkeys(&settings_store, handles.hwnd) {
         Ok(value) => value,
-        Err(error) => {
+        Err(HotkeyLoadError::Fatal(error)) => {
             destroy_window(handles.hwnd);
             drop(instance);
             return Err(error);
+        }
+        Err(HotkeyLoadError::BothConflict) => {
+            destroy_window(handles.hwnd);
+            drop(instance);
+            show_error_message(
+                "한/영 전환 도우미",
+                "Shift + Space와 Ctrl + Space를 모두 등록할 수 없습니다.\n다른 프로그램의 단축키를 해제한 뒤 다시 실행해 주세요.",
+            );
+            return Ok(1);
         }
     };
 
@@ -125,7 +122,7 @@ pub fn run(mode: LaunchMode) -> Result<i32, Win32Error> {
 fn load_hotkeys(
     store: &RegistrySettingsStore,
     hwnd: HWND,
-) -> Result<(HotkeyManager<WinHotkeyBackend>, String), Win32Error> {
+) -> Result<(HotkeyManager<WinHotkeyBackend>, String), HotkeyLoadError> {
     let requested = store.load()?;
     match HotkeyManager::new(WinHotkeyBackend::new(hwnd), requested) {
         Ok(manager) => Ok((manager, "실행 중".to_owned())),
@@ -133,7 +130,7 @@ fn load_hotkeys(
             let conflict = match error {
                 ApplyError::Register { hotkey, .. } => hotkey,
                 ApplyError::Rollback { .. } | ApplyError::Unregister { .. } => {
-                    return Err(Win32Error::new(1));
+                    return Err(HotkeyLoadError::Fatal(Win32Error::new(1)));
                 }
             };
             let fallback_hotkey = match conflict {
@@ -144,7 +141,7 @@ fn load_hotkeys(
                 fallback_hotkey == Hotkey::ShiftSpace,
                 fallback_hotkey == Hotkey::CtrlSpace,
             )
-            .map_err(|_| Win32Error::new(1))?;
+            .map_err(|_| HotkeyLoadError::Fatal(Win32Error::new(1)))?;
             match HotkeyManager::new(WinHotkeyBackend::new(hwnd), fallback) {
                 Ok(manager) => {
                     store.save(fallback)?;
@@ -157,15 +154,20 @@ fn load_hotkeys(
                         ),
                     ))
                 }
-                Err(_) => {
-                    show_error_message(
-                        "한/영 전환 도우미",
-                        "Shift + Space와 Ctrl + Space를 모두 등록할 수 없습니다.\n다른 프로그램의 단축키를 해제한 뒤 다시 실행해 주세요.",
-                    );
-                    Err(Win32Error::new(1))
-                }
+                Err(_) => Err(HotkeyLoadError::BothConflict),
             }
         }
+    }
+}
+
+enum HotkeyLoadError {
+    Fatal(Win32Error),
+    BothConflict,
+}
+
+impl From<Win32Error> for HotkeyLoadError {
+    fn from(error: Win32Error) -> Self {
+        Self::Fatal(error)
     }
 }
 
@@ -189,7 +191,8 @@ fn message_loop(
         }
 
         if message.message == WM_HOTKEY {
-            if hotkey_from_id(message.wParam.0 as i32).is_some()
+            let hotkey = hotkey_from_id(message.wParam.0 as i32);
+            if should_process_hotkey(controller.registered_hotkeys(), hotkey)
                 && controller.on_hotkey(started.elapsed())
             {
                 timer.start()?;
@@ -326,88 +329,14 @@ fn hotkey_from_id(id: i32) -> Option<Hotkey> {
         .find(|&hotkey| hotkey_spec(hotkey).id == id)
 }
 
-fn should_process_timer(current_id: Option<usize>, id: usize) -> bool {
-    current_id == Some(id)
+fn should_process_hotkey(settings: AppSettings, hotkey: Option<Hotkey>) -> bool {
+    hotkey.is_some_and(|hotkey| settings.is_enabled(hotkey))
 }
 
 fn hotkey_label(hotkey: Hotkey) -> &'static str {
     match hotkey {
         Hotkey::ShiftSpace => "Shift + Space",
         Hotkey::CtrlSpace => "Ctrl + Space",
-    }
-}
-
-struct TimerGuard {
-    hwnd: HWND,
-    active: bool,
-    current_id: Option<usize>,
-    next_id: usize,
-}
-
-impl TimerGuard {
-    fn new(hwnd: HWND) -> Self {
-        Self {
-            hwnd,
-            active: false,
-            current_id: None,
-            next_id: TIMER_ID,
-        }
-    }
-
-    fn start(&mut self) -> Result<(), Win32Error> {
-        if self.active {
-            return Ok(());
-        }
-        // Each pending cycle gets a new ID, so queued WM_TIMER messages from an older cycle
-        // cannot match the new active generation.
-        let id = self.next_timer_id();
-        // Safety: hwnd is the app-owned settings window and the null callback requests WM_TIMER
-        // messages on this thread; the scalar timer id and interval are valid Win32 values.
-        let timer = unsafe {
-            windows::Win32::UI::WindowsAndMessaging::SetTimer(
-                Some(self.hwnd),
-                id,
-                TIMER_INTERVAL_MS,
-                None,
-            )
-        };
-        if timer == 0 {
-            Err(Win32Error::new(1))
-        } else {
-            self.active = true;
-            self.current_id = Some(id);
-            Ok(())
-        }
-    }
-
-    fn stop(&mut self) {
-        if !self.active {
-            return;
-        }
-        // A queued WM_TIMER from this generation may remain after KillTimer. Its generation ID
-        // cannot match the next active timer and is ignored by should_process_timer.
-        // Safety: current_id belongs to this app-owned HWND and was passed to SetTimer.
-        unsafe {
-            let _ = KillTimer(Some(self.hwnd), self.current_id.unwrap_or(0));
-        }
-        self.active = false;
-        self.current_id = None;
-    }
-
-    fn current_id(&self) -> Option<usize> {
-        self.current_id.filter(|_| self.active)
-    }
-
-    fn next_timer_id(&mut self) -> usize {
-        let id = self.next_id;
-        self.next_id = next_generation_id(id);
-        id
-    }
-}
-
-impl Drop for TimerGuard {
-    fn drop(&mut self) {
-        self.stop();
     }
 }
 
@@ -456,21 +385,18 @@ fn wide(value: &str) -> Vec<u16> {
 
 #[cfg(test)]
 mod tests {
-    use super::{TIMER_ID, next_generation_id, should_process_timer};
+    use crate::config::{AppSettings, Hotkey};
+
+    use super::should_process_hotkey;
 
     #[test]
-    fn stale_or_inactive_timer_messages_are_ignored() {
-        assert!(!should_process_timer(None, TIMER_ID));
-        assert!(!should_process_timer(Some(TIMER_ID), TIMER_ID + 1));
-        assert!(!should_process_timer(Some(TIMER_ID + 1), TIMER_ID));
-        assert!(should_process_timer(Some(TIMER_ID), TIMER_ID));
-    }
-
-    #[test]
-    fn timer_generations_advance_and_skip_reserved_ids() {
-        assert_eq!(next_generation_id(TIMER_ID), TIMER_ID + 1);
-        assert_ne!(next_generation_id(0x5100), 0x5101);
-        assert_ne!(next_generation_id(0x5101), 0x5102);
-        assert_ne!(next_generation_id(usize::MAX), 0);
+    fn stale_or_disabled_hotkey_messages_are_ignored() {
+        let only_control = AppSettings::new(false, true).expect("one hotkey remains");
+        assert!(!should_process_hotkey(
+            only_control,
+            Some(Hotkey::ShiftSpace)
+        ));
+        assert!(should_process_hotkey(only_control, Some(Hotkey::CtrlSpace)));
+        assert!(!should_process_hotkey(only_control, None));
     }
 }
