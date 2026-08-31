@@ -1,0 +1,55 @@
+name: Windows package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt,clippy
+      - name: Run tests
+        run: cargo test --all-targets
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Build release executable
+        run: cargo build --release
+      - name: Resolve and validate version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $version = $env:GITHUB_REF_NAME.Substring(1)
+          } else {
+            $version = '0.1.0'
+          }
+          if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$') {
+            throw "Invalid package version from ref: $version"
+          }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - name: Install NSIS
+        run: choco install nsis --no-progress -y
+      - name: Prepare package directory
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force dist | Out-Null
+      - name: Build NSIS installer
+        shell: pwsh
+        run: makensis "/DVERSION=$env:VERSION" installer\ShiftSpaceLangChange.nsi
+      - name: Verify package outputs
+        shell: pwsh
+        run: pwsh -File scripts\verify-package.ps1 -Version $env:VERSION
+      - uses: actions/upload-artifact@v7
+        with:
+          name: shift-space-lang-change-windows-x64
+          path: |
+            target/release/shift-space-lang-change.exe
+            dist/ShiftSpaceLangChange-Setup-${{ steps.version.outputs.version }}-x64.exe
