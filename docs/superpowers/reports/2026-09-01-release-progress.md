@@ -2,7 +2,15 @@
 
 ## 승인된 순서
 
-오류 수정 → Windows CI/package → Windows 실기기 HVC → `main` 병합 → `v0.1.0` 릴리스 순서로 진행한다.
+2026-09-01 공개 선행 릴리스 결정에 따라 다음 순서로 진행한다.
+
+1. 공개 전 전체 Git 이력과 현재 트리의 민감정보·개인정보 노출 가능성을 점검한다.
+2. 릴리스 문서에 Windows 실기기 HVC 미완료와 Authenticode 미서명에 따른 SmartScreen 경고 가능성을 명시한다.
+3. 기능 브랜치의 최종 CI를 확인하고 `main`에 병합한다.
+4. `main` 최종 CI 통과 뒤 `v0.1.0` 태그로 Windows package workflow를 실행한다.
+5. 최종 설치기의 파일 형식·크기·SHA-256을 확인해 GitHub Release에 첨부한다.
+6. 저장소를 PUBLIC으로 전환하고 익명 공개 접근으로 저장소·릴리스·설치기 링크를 확인한다.
+7. Windows HVC는 공개 후 후속 검증으로 진행하며, 문제가 발견되면 패치 릴리스로 수정한다.
 
 ## 오류 수정 게이트
 
@@ -14,7 +22,9 @@
 
 ## GitHub와 CI
 
-- 비공개 저장소: `https://github.com/WBmaker2/shift-space-lang-change`
+- 공개 전환 대상 저장소: [WBmaker2/shift-space-lang-change](https://github.com/WBmaker2/shift-space-lang-change)
+- 공개 전환 후 확인할 최신 릴리스: [GitHub latest release](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
+- 공개 전환 후 확인할 설치기: [ShiftSpaceLangChange-Setup-0.1.0-x64.exe](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
 - `main`과 `feat/windows-hotkey-app` 브랜치를 push했다.
 - 기능 브랜치 CI run `33411398369`: Ubuntu core와 Windows job 모두 통과했다.
 
@@ -23,7 +33,7 @@
 - `workflow_dispatch` 첫 시도는 package workflow 파일이 아직 기본 브랜치 `main`에 없어서 GitHub API 404로 중단되었다. 실행 자체가 생성되지 않았으며 저장소 내용은 바뀌지 않았다.
 - HVC 전 `main` 조기 병합을 피하기 위해 기능 브랜치 HEAD에 release-candidate 태그 `v0.1.0-rc.1`을 사용한다.
 - 태그의 `v*` push trigger로 Windows package workflow를 실행하고 `0.1.0-rc.1` 설치 파일을 HVC 대상으로 사용한다.
-- 최종 `v0.1.0` 태그와 GitHub Release는 HVC 통과 뒤에만 만든다.
+- 최종 `v0.1.0` 태그와 GitHub Release는 공개 선행 결정에 따라 HVC 완료를 기다리지 않고, `main` 최종 CI와 최종 package/hash 검증 뒤 만든다.
 
 ## RC.1 package 실패와 수정 계획
 
@@ -65,7 +75,9 @@
 - `ShiftSpaceLangChange-Setup-0.1.0-rc.3-x64.exe`: NSIS self-extracting Windows installer, 124,936 bytes, SHA-256 `dbf40fcbe45715fc9892e3c307527861c8159411309ecab24d14ade1bd5a33b9`
 - artifact를 내려받아 파일 형식, 크기, SHA-256을 독립 확인했다.
 
-## 아직 미완료
+## 공개 선행 결정 적용 후 상태
 
-- Windows 10/11 x64 한국어 Microsoft IME 실기기 HVC
-- HVC 통과 후 `main` 병합, 최종 CI, `v0.1.0` tag/release
+- 문서 반영: README, CHANGELOG, 공개 릴리스 노트에 설치 링크 및 HVC·SmartScreen·UIPI 제한을 기록했다.
+- 공개 전 선행 게이트: 민감정보·개인정보 점검, 기능 브랜치 최종 CI, `main` 병합 및 최종 CI, `v0.1.0` package/hash, GitHub Release 첨부와 PUBLIC 전환 확인이 남아 있다.
+- 공개 후 후속 검증: Windows 10/11 x64 한국어 Microsoft IME 실기기 HVC는 미완료이며 통과로 표시하지 않는다.
+- 알려진 제한: Authenticode 미서명으로 SmartScreen 경고 가능성이 있고, 관리자 권한 앱에는 UIPI 때문에 `SendInput`이 전달되지 않을 수 있다.

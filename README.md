@@ -12,6 +12,11 @@ Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 
 
 ## 설치와 사용
 
+공개 GitHub Release의 최신 설치기는 다음 링크에서 받을 수 있습니다.
+
+- [ShiftSpaceLangChange-Setup-0.1.0-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
+- [GitHub 최신 릴리스 페이지](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
+
 Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
 
 설정 창에서 다음 항목을 각각 체크할 수 있습니다.
@@ -25,6 +30,8 @@ Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe
 
 ## 제거와 SmartScreen
 
+2026-09-01 공개 선행 릴리스 결정에 따라 Windows 실기기 HVC는 공개 후 후속 검증으로 남아 있습니다. CI의 자동 테스트·패키지 검증은 완료되었지만, 실제 Windows 10/11에서의 설치·입력 전환·트레이·자동 실행·제거 동작을 아직 통과로 주장하지 않습니다. 문제가 발견되면 후속 패치 릴리스에서 수정합니다.
+
 시작 메뉴의 제거 프로그램을 실행하면 먼저 실행 중인 앱에 종료를 요청하고 실행 파일 잠금이 풀릴 때까지 짧게 재시도한 뒤 다음 항목을 정리합니다. 수 초 안에 종료되지 않으면 설치·제거를 중단하여 부분 변경을 피합니다.
 
 - 설치 폴더와 실행 파일
@@ -33,7 +40,7 @@ Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe
 - `HKCU\Software\ShiftSpaceLangChange` 설정
 - 현재 사용자 제거 정보
 
-배포 파일에는 유료 Authenticode 서명이 포함되지 않습니다. 따라서 Windows SmartScreen이 최초 실행 시 경고할 수 있으며, 배포 출처를 확인한 경우에만 사용자가 직접 허용해야 합니다.
+배포 파일에는 Authenticode 코드 서명이 포함되지 않습니다. 따라서 Windows SmartScreen이 최초 실행 시 경고할 수 있으며, 배포 출처와 파일을 확인한 경우에만 사용자가 직접 허용해야 합니다. SmartScreen 경고가 없다는 검증도 아직 완료되지 않았습니다.
 
 ## 개발 및 검증
 
@@ -59,7 +66,7 @@ pwsh -File scripts\verify-package.ps1 -Version 0.1.0
 
 GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징을 수행하고 `shift-space-lang-change-windows-x64` artifact로 실행 파일과 설치 파일을 제공합니다. 태그는 `v0.1.0`처럼 숫자 세 부분의 버전을 사용해야 합니다.
 
-Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. 현재 저장소에 원격 GitHub 주소가 연결되지 않았다면 다운로드 링크가 아직 생성되지 않습니다.
+Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. 공개 릴리스의 상세 범위와 자동 검증·미완료 항목은 [v0.1.0 릴리스 노트](.github/release-notes-v0.1.0.md)에서 확인할 수 있습니다.
 
 ## 제한 사항
 
