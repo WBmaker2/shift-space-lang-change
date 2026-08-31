@@ -79,6 +79,6 @@ Rust 1.97.1 toolchain의 절대 경로와 toolchain `bin`을 PATH 앞에 두고 
 - `cargo clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings`: 통과
 - `git diff --check`: 통과
 - 줄 수: `src/hotkeys.rs` 370줄, `src/controller.rs` 204줄, `src/platform/windows/hotkeys.rs` 116줄, `src/platform/windows/error.rs` 50줄, `src/platform/windows/app.rs` 442줄, `tests/hotkey_manager.rs` 419줄, `tests/controller.rs` 208줄
-- 라운드 2 구현·검증 커밋 SHA: 커밋 후 기록
+- 라운드 2 구현·검증 커밋 SHA: `6c1fdd0bb75f85dfe66b7e50d9587a2dabde5bc9`
 
 이번 라운드도 macOS에서 수행했으므로 Windows runtime/HVC, 설치·트레이·실제 단축키 충돌은 미검증입니다.
