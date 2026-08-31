@@ -56,8 +56,16 @@
 - 최초 독립 리뷰의 P2 순서 검사 finding을 보완했고 재검토 결과 APPROVED, 추가 finding 없음이다.
 - RC.3 package workflow의 Windows PowerShell 정적 검사와 실제 NSIS 컴파일 성공 여부를 다음 게이트로 확인한다.
 
+## RC.3 package 성공
+
+- tag/commit: `v0.1.0-rc.3` / `13098466aad1dae8d4d4246064ec9cce8371422b`
+- package run: `33413889332` — Windows 테스트, clippy, release EXE, NSIS 경로 탐색, NSIS 범위 검사, 설치기 컴파일, 출력 검증, artifact 업로드 모두 통과
+- artifact: `shift-space-lang-change-windows-x64`, id `9766285006`, archive 196,683 bytes, 만료 예정 `2026-11-29T16:24:12Z`
+- `shift-space-lang-change.exe`: Windows x64 GUI PE, 158,720 bytes, SHA-256 `a3acb7a1caac814b6ba7521a7cdecd59667fcf2d84f0d7ff6d8c7d02f3b999f2`
+- `ShiftSpaceLangChange-Setup-0.1.0-rc.3-x64.exe`: NSIS self-extracting Windows installer, 124,936 bytes, SHA-256 `dbf40fcbe45715fc9892e3c307527861c8159411309ecab24d14ade1bd5a33b9`
+- artifact를 내려받아 파일 형식, 크기, SHA-256을 독립 확인했다.
+
 ## 아직 미완료
 
-- Windows package artifact 생성·다운로드·SHA-256 기록
 - Windows 10/11 x64 한국어 Microsoft IME 실기기 HVC
 - HVC 통과 후 `main` 병합, 최종 CI, `v0.1.0` tag/release
