@@ -11,8 +11,9 @@ if ($Version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$') {
     throw "Invalid package version: $Version"
 }
 
-$binary = 'target\release\shift-space-lang-change.exe'
-$installer = "dist\ShiftSpaceLangChange-Setup-$Version-x64.exe"
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$binary = Join-Path $repoRoot 'target\release\shift-space-lang-change.exe'
+$installer = Join-Path $repoRoot "dist\ShiftSpaceLangChange-Setup-$Version-x64.exe"
 
 if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
     throw "Missing release binary: $binary"

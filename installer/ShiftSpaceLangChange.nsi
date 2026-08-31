@@ -18,12 +18,39 @@ ShowUninstDetails show
 !define RUN_KEY "Software\Microsoft\Windows\CurrentVersion\Run"
 !define RUN_VALUE "ShiftSpaceLangChange"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\ShiftSpaceLangChange"
+!define STOP_RETRIES 20
+!define STOP_INTERVAL_MS 250
 
 Function .onInit
-  ; Ask an existing version to leave before NSIS replaces its executable.
-  IfFileExists "${APP_EXE}" 0 +2
-    ExecWait '"${APP_EXE}" --quit-existing'
-  Sleep 500
+  ; Stop and unlock the old executable before an install or uninstall changes
+  ; any metadata. Abort leaves the existing installation otherwise untouched.
+  Call StopExistingApp
+FunctionEnd
+
+Function StopExistingApp
+  IfFileExists "${APP_EXE}" 0 stop_done
+  ExecWait '"${APP_EXE}" --quit-existing'
+  StrCpy $0 0
+
+stop_try:
+  IfFileExists "${APP_EXE}" 0 stop_done
+  ClearErrors
+  Delete "${APP_EXE}"
+  IfErrors stop_wait stop_done
+
+stop_wait:
+  IntOp $0 $0 + 1
+  IntCmp $0 ${STOP_RETRIES} stop_timeout stop_sleep stop_timeout
+
+stop_sleep:
+  Sleep ${STOP_INTERVAL_MS}
+  Goto stop_try
+
+stop_timeout:
+  MessageBox MB_ICONSTOP|MB_OK "기존 실행 중인 앱을 종료하거나 파일 잠금을 해제하지 못했습니다.$\r$\n설치 또는 제거를 중단합니다. 앱을 직접 종료한 뒤 다시 시도해 주세요."
+  Abort
+
+stop_done:
 FunctionEnd
 
 Section "Install"
@@ -52,12 +79,8 @@ Section "Install"
 SectionEnd
 
 Section "Uninstall"
-  ; The helper process sends the private quit message and exits. A short grace
-  ; period prevents normal upgrades/removals from racing the old process.
-  IfFileExists "${APP_EXE}" 0 +2
-    ExecWait '"${APP_EXE}" --quit-existing'
-  Sleep 500
-
+  ; .onInit has already stopped and deleted the executable. Only metadata and
+  ; the now-unlocked remaining files are removed here.
   DeleteRegValue HKCU "${RUN_KEY}" "${RUN_VALUE}"
   DeleteRegKey HKCU "Software\ShiftSpaceLangChange"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
