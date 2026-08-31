@@ -21,3 +21,9 @@ fn a_named_mutex_allows_only_one_primary_guard() {
 
     drop(guard);
 }
+
+#[test]
+fn invalid_mutex_names_are_rejected_before_win32() {
+    assert!(SingleInstanceGuard::acquire_named("").is_err());
+    assert!(SingleInstanceGuard::acquire_named("Local\\ShiftSpaceLangChange\0suffix").is_err());
+}

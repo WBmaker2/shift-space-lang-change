@@ -12,3 +12,15 @@ fn launch_modes_are_explicit() {
         LaunchMode::QuitExisting
     );
 }
+
+#[test]
+fn first_recognized_mode_wins_when_multiple_modes_are_present() {
+    assert_eq!(
+        parse_launch_mode(["--background", "--quit-existing"]),
+        LaunchMode::Background
+    );
+    assert_eq!(
+        parse_launch_mode(["--quit-existing", "--background"]),
+        LaunchMode::QuitExisting
+    );
+}

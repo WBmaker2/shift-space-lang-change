@@ -2,7 +2,8 @@ use crate::launch::{WINDOW_CLASS, WM_APP_REQUEST_EXIT_ID};
 
 use super::error::Win32Error;
 use windows::Win32::Foundation::{
-    CloseHandle, ERROR_ALREADY_EXISTS, GetLastError, HANDLE, HWND, LPARAM, WPARAM,
+    CloseHandle, ERROR_ALREADY_EXISTS, ERROR_INVALID_NAME, GetLastError, HANDLE, HWND, LPARAM,
+    WPARAM,
 };
 use windows::Win32::System::Threading::CreateMutexW;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -29,6 +30,10 @@ impl SingleInstanceGuard {
     }
 
     pub fn acquire_named(name: &str) -> Result<AcquireResult, Win32Error> {
+        if name.is_empty() || name.contains('\0') {
+            return Err(Win32Error::new(ERROR_INVALID_NAME.0));
+        }
+
         let name = wide(name);
         // Safety: the UTF-16 name is NUL-terminated and remains alive for this call. A null
         // security descriptor keeps the mutex in the current user's normal object namespace.
@@ -65,11 +70,11 @@ pub fn show_existing_window() -> Result<bool, Win32Error> {
 
     // Safety: hwnd was returned by FindWindowW and is passed only as a scalar window handle;
     // these calls do not borrow or retain any Rust pointer.
-    unsafe {
+    let foregrounded = unsafe {
         let _ = ShowWindow(hwnd, SW_RESTORE);
-        let _ = SetForegroundWindow(hwnd);
-    }
-    Ok(true)
+        SetForegroundWindow(hwnd) == true
+    };
+    Ok(foregrounded)
 }
 
 /// Ask the primary process to terminate through its registered window message.
