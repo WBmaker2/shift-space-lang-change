@@ -68,6 +68,14 @@ GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·
 
 Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. 공개 릴리스의 상세 범위와 자동 검증·미완료 항목은 [v0.1.0 릴리스 노트](.github/release-notes-v0.1.0.md)에서 확인할 수 있습니다.
 
+## 개발 문서
+
+- [설계 문서](docs/superpowers/specs/2026-08-31-shift-space-lang-change-design.md)
+- [구현 계획](docs/superpowers/plans/2026-08-31-shift-space-lang-change.md)
+- [완료·배포 계획](docs/superpowers/plans/2026-08-31-release-completion.md)
+- [전역 단축키 오류 분류 수정 기록](docs/superpowers/reports/2026-09-01-hotkey-error-fix.md)
+- [배포 진행 기록](docs/superpowers/reports/2026-09-01-release-progress.md)
+
 ## 제한 사항
 
 앱은 지정한 두 전역 단축키만 등록하며 키 입력 내용을 기록하거나 전송하지 않습니다. 관리자 권한 앱과의 입력 전달, 한국어 IME 설치 여부, Windows 로그인 후 동작은 Windows 환경에서 별도 확인이 필요합니다. 지원하지 않는 Windows ARM64·32비트 빌드, 임의 단축키, 자동 업데이트, 음성 기능은 범위에 포함되지 않습니다.
