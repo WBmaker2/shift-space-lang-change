@@ -92,14 +92,17 @@ pub fn run(mode: LaunchMode) -> Result<i32, Win32Error> {
         controller.startup_enabled(),
         &initial_status,
     )?;
-    let timer = TimerGuard::start(handles.hwnd)?;
     if mode == LaunchMode::Foreground {
         show_window(handles.hwnd);
     } else {
         hide_window(handles.hwnd);
     }
 
-    let exit_code = message_loop(&handles, &mut tray, &mut controller)?;
+    if initial_status != "실행 중" {
+        notify_best_effort(&mut tray, &initial_status);
+    }
+    let mut timer = TimerGuard::new(handles.hwnd);
+    let exit_code = message_loop(&handles, &mut tray, &mut controller, &mut timer)?;
 
     drop(timer);
     drop(controller);
@@ -160,6 +163,7 @@ fn message_loop(
     handles: &UiHandles,
     tray: &mut TrayIcon,
     controller: &mut Controller,
+    timer: &mut TimerGuard,
 ) -> Result<i32, Win32Error> {
     let started = Instant::now();
     let mut message = MSG::default();
@@ -175,8 +179,10 @@ fn message_loop(
         }
 
         if message.message == WM_HOTKEY {
-            if hotkey_from_id(message.wParam.0 as i32).is_some() {
-                let _ = controller.on_hotkey(started.elapsed());
+            if hotkey_from_id(message.wParam.0 as i32).is_some()
+                && controller.on_hotkey(started.elapsed())
+            {
+                timer.start()?;
             }
             continue;
         }
@@ -185,23 +191,29 @@ fn message_loop(
             let now = started.elapsed();
             match controller.poll_toggle(now, keys_are_released()) {
                 Ok(ControllerEvent::ToggleTimedOut) => {
+                    timer.stop();
                     render_best_effort(
                         handles,
                         controller,
                         "입력 해제를 기다리는 시간이 초과되었습니다.",
                     );
+                    notify_best_effort(tray, "입력 해제를 기다리는 시간이 초과되었습니다.");
                 }
-                Ok(ControllerEvent::ToggleSent)
-                | Ok(ControllerEvent::Idle)
-                | Ok(ControllerEvent::Waiting) => {}
-                Err(error) => render_controller_error(handles, controller, error),
+                Ok(ControllerEvent::ToggleSent) | Ok(ControllerEvent::Idle) => timer.stop(),
+                Ok(ControllerEvent::Waiting) => {}
+                Err(error) => {
+                    timer.stop();
+                    render_controller_error(handles, tray, controller, error);
+                }
             }
             continue;
         }
 
         if message.message == WM_APP_TRAY {
             match tray.read_event(message.wParam.0, message.lParam.0, controller.settings())? {
-                Some(event) if handle_ui_event(handles, controller, event)? => return Ok(0),
+                Some(event) if handle_ui_event(handles, tray, controller, event)? => {
+                    return Ok(0);
+                }
                 Some(_) | None => {}
             }
             continue;
@@ -217,7 +229,7 @@ fn message_loop(
         // read_ui_event must run before IsDialogMessageW: this keeps Escape on the typed Hide
         // path, while IsDialogMessageW still provides normal WS_TABSTOP keyboard navigation.
         if let Some(event) = read_ui_event(&message) {
-            if handle_ui_event(handles, controller, event)? {
+            if handle_ui_event(handles, tray, controller, event)? {
                 return Ok(0);
             }
             continue;
@@ -240,6 +252,7 @@ fn message_loop(
 
 fn handle_ui_event(
     handles: &UiHandles,
+    tray: &mut TrayIcon,
     controller: &mut Controller,
     event: UiEvent,
 ) -> Result<bool, Win32Error> {
@@ -251,7 +264,7 @@ fn handle_ui_event(
                 controller.startup_enabled(),
                 "설정을 저장했습니다.",
             )?,
-            Err(error) => render_controller_error(handles, controller, error),
+            Err(error) => render_controller_error(handles, tray, controller, error),
         },
         UiEvent::SetStartup(enabled) => match controller.set_startup(enabled) {
             Ok(_) => render_state(
@@ -260,7 +273,7 @@ fn handle_ui_event(
                 controller.startup_enabled(),
                 "자동 실행 설정을 저장했습니다.",
             )?,
-            Err(error) => render_controller_error(handles, controller, error),
+            Err(error) => render_controller_error(handles, tray, controller, error),
         },
         UiEvent::Hide => hide_window(handles.hwnd),
         UiEvent::Show => show_window(handles.hwnd),
@@ -269,9 +282,15 @@ fn handle_ui_event(
     Ok(false)
 }
 
-fn render_controller_error(handles: &UiHandles, controller: &Controller, error: ControllerError) {
+fn render_controller_error(
+    handles: &UiHandles,
+    tray: &mut TrayIcon,
+    controller: &Controller,
+    error: ControllerError,
+) {
     let message = format!("{}", error);
     render_best_effort(handles, controller, &message);
+    notify_best_effort(tray, &message);
 }
 
 fn render_best_effort(handles: &UiHandles, controller: &Controller, status: &str) {
@@ -281,6 +300,13 @@ fn render_best_effort(handles: &UiHandles, controller: &Controller, status: &str
         controller.startup_enabled(),
         status,
     );
+}
+
+fn notify_best_effort(tray: &mut TrayIcon, body: &str) {
+    // Notification failure is deliberately non-fatal: the status control remains the source of
+    // truth and a shell toast may be unavailable when Explorer is restarting or notifications
+    // are disabled.
+    let _ = tray.notify("한/영 전환 도우미", body);
 }
 
 fn hotkey_from_id(id: i32) -> Option<Hotkey> {
@@ -302,12 +328,22 @@ struct TimerGuard {
 }
 
 impl TimerGuard {
-    fn start(hwnd: HWND) -> Result<Self, Win32Error> {
+    fn new(hwnd: HWND) -> Self {
+        Self {
+            hwnd,
+            active: false,
+        }
+    }
+
+    fn start(&mut self) -> Result<(), Win32Error> {
+        if self.active {
+            return Ok(());
+        }
         // Safety: hwnd is the app-owned settings window and the null callback requests WM_TIMER
         // messages on this thread; the scalar timer id and interval are valid Win32 values.
         let timer = unsafe {
             windows::Win32::UI::WindowsAndMessaging::SetTimer(
-                Some(hwnd),
+                Some(self.hwnd),
                 TIMER_ID,
                 TIMER_INTERVAL_MS,
                 None,
@@ -316,21 +352,27 @@ impl TimerGuard {
         if timer == 0 {
             Err(Win32Error::new(1))
         } else {
-            Ok(Self { hwnd, active: true })
+            self.active = true;
+            Ok(())
         }
+    }
+
+    fn stop(&mut self) {
+        if !self.active {
+            return;
+        }
+        // Safety: the timer belongs to the owned settings window and stop is idempotent, so the
+        // timer is removed at most once for each successful start.
+        unsafe {
+            let _ = KillTimer(Some(self.hwnd), TIMER_ID);
+        }
+        self.active = false;
     }
 }
 
 impl Drop for TimerGuard {
     fn drop(&mut self) {
-        if self.active {
-            // Safety: the timer belongs to the owned settings window and this guard calls KillTimer
-            // at most once, after the message loop has stopped consuming its messages.
-            unsafe {
-                let _ = KillTimer(Some(self.hwnd), TIMER_ID);
-            }
-            self.active = false;
-        }
+        self.stop();
     }
 }
 

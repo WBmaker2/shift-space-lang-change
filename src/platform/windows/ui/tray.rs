@@ -5,8 +5,8 @@ use super::super::error::Win32Error;
 use super::window::WM_APP_TRAY;
 use windows::Win32::Foundation::{GetLastError, HWND, POINT, RECT};
 use windows::Win32::UI::Shell::{
-    NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_SETVERSION,
-    NOTIFYICON_VERSION_4, NOTIFYICONDATAW, Shell_NotifyIconW,
+    NIF_ICON, NIF_INFO, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIIF_INFO, NIM_ADD, NIM_DELETE,
+    NIM_MODIFY, NIM_SETVERSION, NOTIFYICON_VERSION_4, NOTIFYICONDATAW, Shell_NotifyIconW,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, DestroyMenu, GetCursorPos, IDI_APPLICATION, MF_DISABLED,
@@ -56,6 +56,22 @@ impl TrayIcon {
             data,
             installed: true,
         })
+    }
+
+    /// Display a best-effort Windows toast without changing the installed icon registration.
+    pub fn notify(&self, title: &str, body: &str) -> Result<(), Win32Error> {
+        let mut data = self.data;
+        data.uFlags = NIF_INFO;
+        write_utf16_truncated(&mut data.szInfoTitle, title);
+        write_utf16_truncated(&mut data.szInfo, body);
+        data.dwInfoFlags = NIIF_INFO;
+        // Safety: data identifies this installed icon and both fixed UTF-16 buffers are fully
+        // initialized with a terminating NUL; the shell copies the notification synchronously.
+        if unsafe { Shell_NotifyIconW(NIM_MODIFY, &data) }.as_bool() {
+            Ok(())
+        } else {
+            Err(last_error())
+        }
     }
 
     /// Handle the shell callback; right click opens a menu and double click shows the window.
@@ -146,10 +162,16 @@ impl Drop for TrayIcon {
 }
 
 fn write_tip(destination: &mut [u16; 128], value: &str) {
-    for (slot, unit) in destination
-        .iter_mut()
-        .zip(value.encode_utf16().chain(std::iter::once(0)))
-    {
+    write_utf16_truncated(destination, value);
+}
+
+fn write_utf16_truncated(destination: &mut [u16], value: &str) {
+    destination.fill(0);
+    if destination.is_empty() {
+        return;
+    }
+    let payload = destination.len() - 1;
+    for (slot, unit) in destination[..payload].iter_mut().zip(value.encode_utf16()) {
         *slot = unit;
     }
 }
@@ -175,4 +197,23 @@ fn win_error(error: windows::core::Error) -> Win32Error {
 
 fn last_error() -> Win32Error {
     Win32Error::new(unsafe { GetLastError() }.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::write_utf16_truncated;
+
+    #[test]
+    fn notification_payload_is_nul_terminated_and_truncated() {
+        let mut payload = [0_u16; 4];
+        write_utf16_truncated(&mut payload, "가나다라마");
+        assert_eq!(payload, ['가' as u16, '나' as u16, '다' as u16, 0]);
+    }
+
+    #[test]
+    fn notification_payload_clears_old_content() {
+        let mut payload = [9_u16; 4];
+        write_utf16_truncated(&mut payload, "A");
+        assert_eq!(payload, ['A' as u16, 0, 0, 0]);
+    }
 }
