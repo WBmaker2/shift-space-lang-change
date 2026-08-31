@@ -125,37 +125,25 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
     }
 
     pub fn apply(&mut self, desired: AppSettings) -> Result<(), ApplyError<B::Error>> {
-        let additions: Vec<_> = desired
-            .enabled_hotkeys()
-            .into_iter()
-            .filter(|&hotkey| !self.active.is_enabled(hotkey))
-            .collect();
-        let removals: Vec<_> = self
-            .active
-            .enabled_hotkeys()
-            .into_iter()
-            .filter(|&hotkey| !desired.is_enabled(hotkey))
-            .collect();
+        let target: BTreeSet<_> = desired.enabled_hotkeys().into_iter().collect();
+        let before = self.registered.clone();
+        let additions: Vec<_> = target.difference(&before).copied().collect();
+        let removals: Vec<_> = before.difference(&target).copied().collect();
 
-        let mut added = Vec::new();
         for hotkey in additions {
             if let Err(source) = self.backend.register(hotkey) {
-                self.rollback_added(&added)?;
-                return Err(ApplyError::Register { hotkey, source });
+                let operation = ApplyError::Register { hotkey, source };
+                return Err(self.rollback_or_original(&before, std::iter::empty(), operation));
             }
             self.registered.insert(hotkey);
-            added.push(hotkey);
         }
 
-        let mut removed = Vec::new();
         for hotkey in removals {
             if let Err(source) = self.backend.unregister(hotkey) {
-                removed.push(hotkey);
-                self.rollback(&added, &removed)?;
-                return Err(ApplyError::Unregister { hotkey, source });
+                let operation = ApplyError::Unregister { hotkey, source };
+                return Err(self.rollback_or_original(&before, [hotkey], operation));
             }
             self.registered.remove(&hotkey);
-            removed.push(hotkey);
         }
 
         self.active = desired;
@@ -175,34 +163,30 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
         self.registered.clone()
     }
 
-    fn rollback_added(&mut self, added: &[Hotkey]) -> Result<(), ApplyError<B::Error>> {
-        let mut first_error = None;
-        for &hotkey in added.iter().rev() {
-            match self.backend.unregister(hotkey) {
-                Ok(()) => {
-                    self.registered.remove(&hotkey);
-                }
-                Err(source) => {
-                    if first_error.is_none() {
-                        first_error = Some(ApplyError::Rollback {
-                            operation: "unregister",
-                            hotkey,
-                            source,
-                        });
-                    }
-                }
-            }
+    fn rollback_or_original(
+        &mut self,
+        target: &BTreeSet<Hotkey>,
+        force_register: impl IntoIterator<Item = Hotkey>,
+        original: ApplyError<B::Error>,
+    ) -> ApplyError<B::Error> {
+        match self.rollback_to(target, force_register) {
+            Ok(()) => original,
+            Err(error) => error,
         }
-        first_error.map_or(Ok(()), Err)
     }
 
-    fn rollback(
+    fn rollback_to(
         &mut self,
-        added: &[Hotkey],
-        removed: &[Hotkey],
+        target: &BTreeSet<Hotkey>,
+        force_register: impl IntoIterator<Item = Hotkey>,
     ) -> Result<(), ApplyError<B::Error>> {
+        let current = self.registered.clone();
+        let mut additions: BTreeSet<_> = target.difference(&current).copied().collect();
+        additions.extend(force_register);
+        let mut removals: Vec<_> = current.difference(target).copied().collect();
+        removals.reverse();
         let mut first_error = None;
-        for &hotkey in removed.iter().rev() {
+        for hotkey in additions {
             match self.backend.register(hotkey) {
                 Ok(()) => {
                     self.registered.insert(hotkey);
@@ -218,10 +202,21 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
                 }
             }
         }
-        if let Err(error) = self.rollback_added(added)
-            && first_error.is_none()
-        {
-            first_error = Some(error);
+        for hotkey in removals {
+            match self.backend.unregister(hotkey) {
+                Ok(()) => {
+                    self.registered.remove(&hotkey);
+                }
+                Err(source) => {
+                    if first_error.is_none() {
+                        first_error = Some(ApplyError::Rollback {
+                            operation: "unregister",
+                            hotkey,
+                            source,
+                        });
+                    }
+                }
+            }
         }
         first_error.map_or(Ok(()), Err)
     }

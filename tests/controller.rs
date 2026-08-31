@@ -164,7 +164,10 @@ fn save_failure_restores_previous_hotkeys_and_ui_state() {
     let mut controller = fixture_with_save_failure(AppSettings::default());
     assert!(controller.set_hotkey(Hotkey::ShiftSpace, false).is_err());
     assert_eq!(controller.settings(), AppSettings::default());
-    assert_eq!(controller.registered_hotkeys(), AppSettings::default());
+    assert_eq!(
+        controller.registered_hotkeys(),
+        [Hotkey::ShiftSpace, Hotkey::CtrlSpace].into()
+    );
 }
 
 #[test]

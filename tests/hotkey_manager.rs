@@ -380,3 +380,40 @@ fn drop_retries_added_registration_left_by_rollback_failure() {
         ]
     );
 }
+
+#[test]
+fn retry_reconciles_diverged_actual_state_without_duplicate_register() {
+    let (backend, trace) = ScriptedBackend::new([
+        Ok(()),         // initial Shift + Space registration
+        Ok(()),         // add Ctrl + Space
+        Err(FakeError), // remove Shift + Space fails
+        Ok(()),         // restore uncertain Shift + Space registration
+        Err(FakeError), // rollback cannot remove Ctrl + Space
+        Ok(()),         // retry removes stale Shift + Space
+    ]);
+    let initial = AppSettings::new(true, false).unwrap();
+    let mut manager = HotkeyManager::new(backend, initial).unwrap();
+    let desired = AppSettings::new(false, true).unwrap();
+
+    manager.apply(desired).unwrap_err();
+    assert_eq!(
+        manager.registered_hotkeys(),
+        [Hotkey::ShiftSpace, Hotkey::CtrlSpace].into()
+    );
+
+    manager.apply(desired).unwrap();
+    assert_eq!(manager.active_settings(), desired);
+    assert_eq!(manager.registered_hotkeys(), [Hotkey::CtrlSpace].into());
+    assert_eq!(trace.borrow().registered, [Hotkey::CtrlSpace].into());
+    assert_eq!(
+        trace.borrow().calls,
+        vec![
+            Operation::Register(Hotkey::ShiftSpace),
+            Operation::Register(Hotkey::CtrlSpace),
+            Operation::Unregister(Hotkey::ShiftSpace),
+            Operation::Register(Hotkey::ShiftSpace),
+            Operation::Unregister(Hotkey::CtrlSpace),
+            Operation::Unregister(Hotkey::ShiftSpace),
+        ]
+    );
+}

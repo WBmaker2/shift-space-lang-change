@@ -6,7 +6,7 @@
 
 ## 변경 내용
 
-- `RegisterHotKey`와 `UnregisterHotKey` 실패 직후 `GetLastError()`의 raw Win32 코드를 `Win32Error`에 보존하도록 수정했습니다. Windows crate `Error`의 HRESULT 값은 더 이상 오류 코드로 사용하지 않습니다. 각 `unsafe` 호출에는 GetLastError의 유효 시점과 thread-local 전제를 주석으로 남겼습니다.
+- `RegisterHotKey`와 `UnregisterHotKey`가 반환한 `windows::core::Error`에서 `WIN32_ERROR::from_error`로 raw Win32 코드를 복원해 `Win32Error`에 보존합니다. Windows crate `Error`의 HRESULT를 raw code처럼 직접 저장하지 않습니다.
 - 플랫폼 중립 `HotkeyErrorClass`와 `classify_hotkey_error` 순수 함수를 추가했습니다. `ERROR_HOTKEY_ALREADY_REGISTERED`(1409)만 `AlreadyRegistered`로 분류하고, access denied(5), invalid handle(6), 임의 오류는 `Fatal`로 분류합니다.
 - 초기 등록과 fallback 등록 모두 같은 `classify_hotkey_apply_error` 경로를 사용합니다. 충돌만 fallback 또는 1회 양쪽 충돌 대화상자로 이어지고, Register/Unregister/Rollback의 다른 오류는 원래 `Win32Error`를 Fatal로 전달합니다.
 - partial registration rollback, `HotkeyManager::Drop`, 기존 한국어 BothConflict 대화상자와 cleanup 경로는 유지했습니다.
@@ -54,5 +54,31 @@ Rust 1.97.1 toolchain의 절대 경로와 toolchain `bin`을 PATH 앞에 두고 
 - `git diff --check`: 통과
 - 줄 수: `src/hotkeys.rs` 375줄, `src/controller.rs` 209줄, `src/platform/windows/hotkeys.rs` 71줄, `src/platform/windows/error.rs` 50줄, `src/platform/windows/app.rs` 442줄, `tests/hotkey_manager.rs` 382줄
 - 라운드 1 구현·검증 커밋 SHA: `5d280a73f5646a7bf89509f5c06078f7063aaa17`
+
+이번 라운드도 macOS에서 수행했으므로 Windows runtime/HVC, 설치·트레이·실제 단축키 충돌은 미검증입니다.
+
+## 독립 리뷰 수정 라운드 2
+
+- Important finding 1: controller의 `registered_hotkeys()`가 논리 `AppSettings`를 반환해 실제 등록 상태와 API가 어긋났습니다. 이제 `settings()`는 논리 설정을, `registered_hotkeys()`는 0개도 표현 가능한 실제 `BTreeSet<Hotkey>`를 반환하며 중복 API를 제거했습니다. stale `WM_HOTKEY` guard와 controller 테스트도 이 집합을 사용합니다.
+- Important finding 2: `HotkeyManager::apply`가 `self.active` 기준으로만 변경을 계산해 rollback 실패 뒤 divergence를 수렴시키지 못했습니다. 매 호출 시작의 실제 집합을 rollback target으로 저장하고 actual-vs-desired 차이를 reconciliation하며, 실패 시 강제 재등록이 필요한 불확실한 unregister도 포함해 가능한 작업을 계속합니다. logical active는 성공 시에만 갱신되고, actual 집합은 register/unregister 성공마다 갱신됩니다.
+- Minor finding 1: fallback Register 오류 5/6/임의 오류와 Unregister/Rollback source를 Fatal로 고정하는 플랫폼 중립 policy 테스트를 추가했습니다.
+- Minor finding 2: Windows 전용 synthetic `windows::core::Error` 테스트를 추가했습니다. `HRESULT::from_win32(1409)`는 raw 1409 Win32 provenance로, low word가 1409인 non-Win32 HRESULT는 원본 HRESULT provenance와 Fatal로 검증합니다. 실제 RegisterHotKey는 호출하지 않습니다.
+- 라운드 1 보고서의 초기 `GetLastError()` 직독 서술은 최종 구현 기준으로 대체되었습니다. 현재 상태는 wrapper가 반환한 Error를 `WIN32_ERROR::from_error`로 복원하며, wrapper 이후 GetLastError를 재조회하지 않습니다.
+
+### TDD 및 회귀 테스트
+
+- RED: controller가 실제 등록 집합을 반환해야 한다는 기대를 먼저 적용해 기존 `AppSettings` 반환 API에서 타입 오류가 발생했습니다. divergence 재시도/Drop 재시도 및 synthetic Windows 변환 기대도 기존 구현에는 등록 집합·provenance 경로가 없어 충족되지 않았습니다.
+- GREEN: `retry_reconciles_diverged_actual_state_without_duplicate_register`, 기존 rollback 계속/Drop 재시도 테스트, controller actual-set 테스트와 policy/HRESULT focused 테스트가 통과했습니다.
+
+### 라운드 2 검증
+
+- `cargo fmt -- --check`: 통과
+- `cargo test --all-targets`: 통과 (전체 36개 테스트)
+- `cargo clippy --all-targets -- -D warnings`: 통과
+- `cargo check --target x86_64-pc-windows-msvc --tests`: 통과
+- `cargo clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings`: 통과
+- `git diff --check`: 통과
+- 줄 수: `src/hotkeys.rs` 370줄, `src/controller.rs` 204줄, `src/platform/windows/hotkeys.rs` 116줄, `src/platform/windows/error.rs` 50줄, `src/platform/windows/app.rs` 442줄, `tests/hotkey_manager.rs` 419줄, `tests/controller.rs` 208줄
+- 라운드 2 구현·검증 커밋 SHA: 커밋 후 기록
 
 이번 라운드도 macOS에서 수행했으므로 Windows runtime/HVC, 설치·트레이·실제 단축키 충돌은 미검증입니다.

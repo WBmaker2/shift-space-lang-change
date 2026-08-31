@@ -229,7 +229,7 @@ fn message_loop(
 
         if message.message == WM_HOTKEY {
             let hotkey = hotkey_from_id(message.wParam.0 as i32);
-            if should_process_hotkey(&controller.registered_hotkey_set(), hotkey)
+            if should_process_hotkey(&controller.registered_hotkeys(), hotkey)
                 && controller.on_hotkey(started.elapsed())
             {
                 timer.start()?;
