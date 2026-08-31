@@ -6,8 +6,8 @@ pub enum Hotkey {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppSettings {
-    pub shift_space_enabled: bool,
-    pub ctrl_space_enabled: bool,
+    shift_space_enabled: bool,
+    ctrl_space_enabled: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,5 +67,13 @@ impl AppSettings {
             Hotkey::ShiftSpace => self.shift_space_enabled,
             Hotkey::CtrlSpace => self.ctrl_space_enabled,
         }
+    }
+
+    pub fn shift_space_enabled(self) -> bool {
+        self.shift_space_enabled
+    }
+
+    pub fn ctrl_space_enabled(self) -> bool {
+        self.ctrl_space_enabled
     }
 }

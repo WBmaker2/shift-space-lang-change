@@ -23,3 +23,10 @@ fn disabling_the_last_hotkey_is_rejected() {
         Err(SettingsError::NoHotkeyEnabled)
     );
 }
+
+#[test]
+fn getters_expose_state_without_mutation() {
+    let settings = AppSettings::new(true, false).unwrap();
+    assert!(settings.shift_space_enabled());
+    assert!(!settings.ctrl_space_enabled());
+}
