@@ -5,6 +5,7 @@ pub mod registry;
 pub mod settings;
 pub mod single_instance;
 pub mod startup;
+pub mod ui;
 
 pub use error::Win32Error;
 pub use hotkeys::{WinHotkeyBackend, keys_are_released};
