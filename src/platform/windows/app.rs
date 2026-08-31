@@ -20,13 +20,23 @@ use super::ui::window::WM_APP_TRAY;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     DispatchMessageW, GetMessageW, IsDialogMessageW, KillTimer, MB_ICONERROR, MB_OK, MSG,
-    MessageBoxW, PM_REMOVE, PeekMessageW, PostQuitMessage, SW_HIDE, SW_SHOW, SetForegroundWindow,
-    ShowWindow, TranslateMessage, WM_DESTROY, WM_HOTKEY, WM_TIMER,
+    MessageBoxW, PostQuitMessage, SW_HIDE, SW_SHOW, SetForegroundWindow, ShowWindow,
+    TranslateMessage, WM_DESTROY, WM_HOTKEY, WM_TIMER,
 };
 use windows::core::PCWSTR;
 
 const TIMER_ID: usize = 0x5103;
 const TIMER_INTERVAL_MS: u32 = 15;
+
+fn next_generation_id(current: usize) -> usize {
+    let mut candidate = current.wrapping_add(1);
+    loop {
+        if candidate != 0 && candidate != 0x5101 && candidate != 0x5102 {
+            return candidate;
+        }
+        candidate = candidate.wrapping_add(1);
+    }
+}
 
 type Controller =
     AppController<WinHotkeyBackend, RegistrySettingsStore, WinStartupController, WinImeSender>;
@@ -187,7 +197,7 @@ fn message_loop(
             continue;
         }
 
-        if message.message == WM_TIMER && should_process_timer(timer.is_active(), message.wParam.0)
+        if message.message == WM_TIMER && should_process_timer(timer.current_id(), message.wParam.0)
         {
             let now = started.elapsed();
             match controller.poll_toggle(now, keys_are_released()) {
@@ -316,8 +326,8 @@ fn hotkey_from_id(id: i32) -> Option<Hotkey> {
         .find(|&hotkey| hotkey_spec(hotkey).id == id)
 }
 
-fn should_process_timer(active: bool, id: usize) -> bool {
-    active && id == TIMER_ID
+fn should_process_timer(current_id: Option<usize>, id: usize) -> bool {
+    current_id == Some(id)
 }
 
 fn hotkey_label(hotkey: Hotkey) -> &'static str {
@@ -330,6 +340,8 @@ fn hotkey_label(hotkey: Hotkey) -> &'static str {
 struct TimerGuard {
     hwnd: HWND,
     active: bool,
+    current_id: Option<usize>,
+    next_id: usize,
 }
 
 impl TimerGuard {
@@ -337,6 +349,8 @@ impl TimerGuard {
         Self {
             hwnd,
             active: false,
+            current_id: None,
+            next_id: TIMER_ID,
         }
     }
 
@@ -344,15 +358,15 @@ impl TimerGuard {
         if self.active {
             return Ok(());
         }
-        // KillTimer -> drain -> SetTimer is intentional: a WM_TIMER already queued for this
-        // window must not be consumed by the next hotkey release cycle.
-        self.kill_and_drain();
+        // Each pending cycle gets a new ID, so queued WM_TIMER messages from an older cycle
+        // cannot match the new active generation.
+        let id = self.next_timer_id();
         // Safety: hwnd is the app-owned settings window and the null callback requests WM_TIMER
         // messages on this thread; the scalar timer id and interval are valid Win32 values.
         let timer = unsafe {
             windows::Win32::UI::WindowsAndMessaging::SetTimer(
                 Some(self.hwnd),
-                TIMER_ID,
+                id,
                 TIMER_INTERVAL_MS,
                 None,
             )
@@ -361,6 +375,7 @@ impl TimerGuard {
             Err(Win32Error::new(1))
         } else {
             self.active = true;
+            self.current_id = Some(id);
             Ok(())
         }
     }
@@ -369,24 +384,24 @@ impl TimerGuard {
         if !self.active {
             return;
         }
-        self.kill_and_drain();
-        self.active = false;
-    }
-
-    fn is_active(&self) -> bool {
-        self.active
-    }
-
-    fn kill_and_drain(&self) {
-        // Safety: the timer belongs to the owned settings window and the app uses no other timer
-        // on this HWND. PeekMessageW removes only this timer id, preserving unrelated queue work.
+        // A queued WM_TIMER from this generation may remain after KillTimer. Its generation ID
+        // cannot match the next active timer and is ignored by should_process_timer.
+        // Safety: current_id belongs to this app-owned HWND and was passed to SetTimer.
         unsafe {
-            let _ = KillTimer(Some(self.hwnd), TIMER_ID);
-            let mut queued = MSG::default();
-            while PeekMessageW(&mut queued, Some(self.hwnd), WM_TIMER, WM_TIMER, PM_REMOVE)
-                .as_bool()
-            {}
+            let _ = KillTimer(Some(self.hwnd), self.current_id.unwrap_or(0));
         }
+        self.active = false;
+        self.current_id = None;
+    }
+
+    fn current_id(&self) -> Option<usize> {
+        self.current_id.filter(|_| self.active)
+    }
+
+    fn next_timer_id(&mut self) -> usize {
+        let id = self.next_id;
+        self.next_id = next_generation_id(id);
+        id
     }
 }
 
@@ -441,12 +456,21 @@ fn wide(value: &str) -> Vec<u16> {
 
 #[cfg(test)]
 mod tests {
-    use super::{TIMER_ID, should_process_timer};
+    use super::{TIMER_ID, next_generation_id, should_process_timer};
 
     #[test]
     fn stale_or_inactive_timer_messages_are_ignored() {
-        assert!(!should_process_timer(false, TIMER_ID));
-        assert!(!should_process_timer(true, TIMER_ID + 1));
-        assert!(should_process_timer(true, TIMER_ID));
+        assert!(!should_process_timer(None, TIMER_ID));
+        assert!(!should_process_timer(Some(TIMER_ID), TIMER_ID + 1));
+        assert!(!should_process_timer(Some(TIMER_ID + 1), TIMER_ID));
+        assert!(should_process_timer(Some(TIMER_ID), TIMER_ID));
+    }
+
+    #[test]
+    fn timer_generations_advance_and_skip_reserved_ids() {
+        assert_eq!(next_generation_id(TIMER_ID), TIMER_ID + 1);
+        assert_ne!(next_generation_id(0x5100), 0x5101);
+        assert_ne!(next_generation_id(0x5101), 0x5102);
+        assert_ne!(next_generation_id(usize::MAX), 0);
     }
 }
