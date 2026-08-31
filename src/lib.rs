@@ -1,4 +1,5 @@
 pub mod config;
+pub mod controller;
 pub mod hotkeys;
 pub mod launch;
 pub mod persistence;

@@ -29,6 +29,16 @@ pub struct HotkeyManager<B: HotkeyBackend> {
     active: AppSettings,
 }
 
+impl<B: HotkeyBackend> Drop for HotkeyManager<B> {
+    fn drop(&mut self) {
+        // Best-effort release keeps a partially initialized process from leaving registrations
+        // behind. The Windows backend owns no Rust resources that need a second shutdown pass.
+        for hotkey in self.active.enabled_hotkeys() {
+            let _ = self.backend.unregister(hotkey);
+        }
+    }
+}
+
 impl<B: HotkeyBackend> HotkeyManager<B> {
     pub fn new(mut backend: B, active: AppSettings) -> Result<Self, ApplyError<B::Error>> {
         let mut registered = Vec::new();
