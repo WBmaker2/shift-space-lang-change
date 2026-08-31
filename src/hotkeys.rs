@@ -322,10 +322,17 @@ mod tests {
                     is_win32: true,
                 },
             };
-            assert_eq!(
-                classify_startup_error(StartupHotkeyPhase::Initial, &error),
-                StartupHotkeyDecision::Fatal
-            );
+            for phase in [StartupHotkeyPhase::Initial, StartupHotkeyPhase::Fallback] {
+                assert_eq!(
+                    classify_startup_error(phase, &error),
+                    StartupHotkeyDecision::Fatal
+                );
+            }
+            let ApplyError::Register { source, .. } = &error else {
+                unreachable!("error is a register failure")
+            };
+            assert_eq!(source.code, code);
+            assert!(source.is_win32);
         }
 
         let non_win32_1409 = ApplyError::Register {

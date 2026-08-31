@@ -61,7 +61,7 @@ Rust 1.97.1 toolchain의 절대 경로와 toolchain `bin`을 PATH 앞에 두고 
 
 - Important finding 1: controller의 `registered_hotkeys()`가 논리 `AppSettings`를 반환해 실제 등록 상태와 API가 어긋났습니다. 이제 `settings()`는 논리 설정을, `registered_hotkeys()`는 0개도 표현 가능한 실제 `BTreeSet<Hotkey>`를 반환하며 중복 API를 제거했습니다. stale `WM_HOTKEY` guard와 controller 테스트도 이 집합을 사용합니다.
 - Important finding 2: `HotkeyManager::apply`가 `self.active` 기준으로만 변경을 계산해 rollback 실패 뒤 divergence를 수렴시키지 못했습니다. 매 호출 시작의 실제 집합을 rollback target으로 저장하고 actual-vs-desired 차이를 reconciliation하며, 실패 시 강제 재등록이 필요한 불확실한 unregister도 포함해 가능한 작업을 계속합니다. logical active는 성공 시에만 갱신되고, actual 집합은 register/unregister 성공마다 갱신됩니다.
-- Minor finding 1: fallback Register 오류 5/6/임의 오류와 Unregister/Rollback source를 Fatal로 고정하는 플랫폼 중립 policy 테스트를 추가했습니다.
+- Minor finding 1: fallback Register 오류 5/6/임의 오류와 Unregister/Rollback source를 Fatal로 고정하는 플랫폼 중립 policy 테스트를 추가했습니다. 현재 `startup_policy_preserves_fatal_categories`가 code 5·6·임의 오류 각각을 Initial과 Fallback 양쪽에서 공통 `classify_startup_error`로 직접 검증합니다.
 - Minor finding 2: Windows 전용 synthetic `windows::core::Error` 테스트를 추가했습니다. `HRESULT::from_win32(1409)`는 raw 1409 Win32 provenance로, low word가 1409인 non-Win32 HRESULT는 원본 HRESULT provenance와 Fatal로 검증합니다. 실제 RegisterHotKey는 호출하지 않습니다.
 - 라운드 1 보고서의 초기 `GetLastError()` 직독 서술은 최종 구현 기준으로 대체되었습니다. 현재 상태는 wrapper가 반환한 Error를 `WIN32_ERROR::from_error`로 복원하며, wrapper 이후 GetLastError를 재조회하지 않습니다.
 
@@ -82,3 +82,24 @@ Rust 1.97.1 toolchain의 절대 경로와 toolchain `bin`을 PATH 앞에 두고 
 - 라운드 2 구현·검증 커밋 SHA: `6c1fdd0bb75f85dfe66b7e50d9587a2dabde5bc9`
 
 이번 라운드도 macOS에서 수행했으므로 Windows runtime/HVC, 설치·트레이·실제 단축키 충돌은 미검증입니다.
+
+## 독립 리뷰 수정 라운드 3
+
+- 남은 Minor finding은 fallback Register fatal 분기의 직접 커버리지였습니다. `startup_policy_preserves_fatal_categories`에 code 5, 6, `0xdead_beef`를 Initial과 Fallback 각각으로 확장하고, 각 source의 원래 code와 Win32 provenance가 분류 전후 유지되는지 검증했습니다.
+- 기능 코드는 변경하지 않았으며 shared `classify_startup_error`만 사용했습니다. 실제 Windows runtime/HVC 및 RegisterHotKey 호출은 수행하지 않았습니다.
+
+### TDD 및 검증
+
+- RED: 기존 테스트는 fatal code들을 Initial phase에서만 확인해 Fallback phase 정책 회귀를 잡지 못하는 상태였습니다.
+- GREEN: 두 phase 모두에서 세 fatal code가 `StartupHotkeyDecision::Fatal`이고 source code/provenance가 보존됨을 확인했습니다.
+- `cargo test --lib hotkeys::tests::startup_policy_preserves_fatal_categories`: 통과
+- `cargo test --all-targets`: 통과 (전체 36개 테스트)
+- `cargo fmt -- --check`: 통과
+- `cargo clippy --all-targets -- -D warnings`: 통과
+- `cargo check --target x86_64-pc-windows-msvc --tests`: 통과
+- `cargo clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings`: 통과
+- `git diff --check`: 통과
+- `wc -l src/hotkeys.rs`: 377줄 (500줄 제한 이내)
+- 라운드 3 커밋 SHA: 커밋 후 기록
+
+이번 라운드도 macOS에서 수행했으므로 Windows runtime/HVC는 미검증입니다.
