@@ -1,6 +1,5 @@
 Unicode true
 RequestExecutionLevel user
-SetShellVarContext current
 
 !ifndef VERSION
   !define VERSION "0.1.0"
@@ -86,6 +85,7 @@ un_stop_done:
 FunctionEnd
 
 Section "Install"
+  SetShellVarContext current
   SetOutPath "$INSTDIR"
   File "..\target\release\shift-space-lang-change.exe"
 
@@ -111,6 +111,7 @@ Section "Install"
 SectionEnd
 
 Section "Uninstall"
+  SetShellVarContext current
   ; un.onInit has already stopped and deleted the executable. Only metadata and
   ; the now-unlocked remaining files are removed here.
   DeleteRegValue HKCU "${RUN_KEY}" "${RUN_VALUE}"
