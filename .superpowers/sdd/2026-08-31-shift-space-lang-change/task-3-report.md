@@ -60,4 +60,6 @@ git diff --check
 결과: focused 7개 PASS, 전체 테스트 13개 PASS, fmt/clippy/diff check PASS.
 
 커밋: `d1ed331 fix: make hotkey rollback fully transactional`
+
+추가 covering test 보강 커밋: `eb0dddb test: cover transactional rollback order`
 - 커밋 전 `git diff --check`를 통과시켰습니다.
