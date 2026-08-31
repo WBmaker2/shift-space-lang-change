@@ -9,6 +9,9 @@ if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
 }
 
 $scope = $null
+$sectionName = $null
+$contextSeen = $false
+$startMenuUseSeen = $false
 $contextSections = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
 foreach ($line in Get-Content -LiteralPath $ScriptPath) {
@@ -19,6 +22,9 @@ foreach ($line in Get-Content -LiteralPath $ScriptPath) {
 
     if ($code -match '^Section\s+"([^"]+)"') {
         $scope = $Matches[1]
+        $sectionName = $scope
+        $contextSeen = $false
+        $startMenuUseSeen = $false
         continue
     }
     if ($code -match '^Function\s+\S+') {
@@ -26,7 +32,16 @@ foreach ($line in Get-Content -LiteralPath $ScriptPath) {
         continue
     }
     if ($code -match '^(SectionEnd|FunctionEnd)\b') {
+        if ($sectionName -eq 'Install' -or $sectionName -eq 'Uninstall') {
+            if (-not $contextSeen) {
+                throw "Missing SetShellVarContext current in $sectionName section"
+            }
+            if (-not $startMenuUseSeen) {
+                throw "Missing start-menu shell-variable use in $sectionName section"
+            }
+        }
         $scope = $null
+        $sectionName = $null
         continue
     }
 
@@ -38,8 +53,20 @@ foreach ($line in Get-Content -LiteralPath $ScriptPath) {
             throw "Unexpected shell context: $line"
         }
         if ($scope -eq 'Install' -or $scope -eq 'Uninstall') {
+            if ($startMenuUseSeen) {
+                throw "SetShellVarContext current must precede start-menu shell-variable use in $scope section"
+            }
+            $contextSeen = $true
             $contextSections.Add($scope) | Out-Null
         }
+    }
+
+    if (($sectionName -eq 'Install' -or $sectionName -eq 'Uninstall') -and
+        $code -match '\$\{START_MENU_DIR\}|\$SMPROGRAMS') {
+        if (-not $contextSeen) {
+            throw "SetShellVarContext current must precede start-menu shell-variable use in $sectionName section"
+        }
+        $startMenuUseSeen = $true
     }
 }
 
