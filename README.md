@@ -2,6 +2,8 @@
 
 Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 바꾸어 주는 작은 시스템 트레이 프로그램입니다. Rust와 Win32 API만 사용하며 WebView, Electron, .NET 런타임, 서비스, 네트워크, 분석 기능을 포함하지 않습니다.
 
+- [프로그램 소개 및 설치 안내](https://wbmaker2.github.io/shift-space-lang-change/)
+
 ## 지원 환경
 
 - Windows 10/11 x64
@@ -76,6 +78,7 @@ Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결�
 - [완료·배포 계획](docs/superpowers/plans/2026-08-31-release-completion.md)
 - [전역 단축키 오류 분류 수정 기록](docs/superpowers/reports/2026-09-01-hotkey-error-fix.md)
 - [배포 진행 기록](docs/superpowers/reports/2026-09-01-release-progress.md)
+- [GitHub Pages 배포 계획](docs/plans/2026-09-01-github-pages-deploy.md)
 
 ## 제한 사항
 
