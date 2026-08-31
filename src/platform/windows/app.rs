@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::config::{AppSettings, Hotkey};
 use crate::controller::{AppController, ControllerError, ControllerEvent};
-use crate::hotkeys::{ApplyError, HotkeyManager};
+use crate::hotkeys::{ApplyError, HotkeyErrorClass, HotkeyManager, classify_hotkey_error};
 use crate::launch::LaunchMode;
 use crate::platform::windows::ui::{
     TrayIcon, UiHandles, create_settings_window, read_ui_event, render_state,
@@ -127,11 +127,9 @@ fn load_hotkeys(
     match HotkeyManager::new(WinHotkeyBackend::new(hwnd), requested) {
         Ok(manager) => Ok((manager, "실행 중".to_owned())),
         Err(error) => {
-            let conflict = match error {
-                ApplyError::Register { hotkey, .. } => hotkey,
-                ApplyError::Rollback { .. } | ApplyError::Unregister { .. } => {
-                    return Err(HotkeyLoadError::Fatal(Win32Error::new(1)));
-                }
+            let conflict = match classify_hotkey_apply_error(error) {
+                HotkeyApplyError::Conflict(hotkey) => hotkey,
+                HotkeyApplyError::Fatal(error) => return Err(HotkeyLoadError::Fatal(error)),
             };
             let fallback_hotkey = match conflict {
                 Hotkey::ShiftSpace => Hotkey::CtrlSpace,
@@ -154,8 +152,33 @@ fn load_hotkeys(
                         ),
                     ))
                 }
-                Err(_) => Err(HotkeyLoadError::BothConflict),
+                Err(error) => match classify_hotkey_apply_error(error) {
+                    HotkeyApplyError::Conflict(_) => Err(HotkeyLoadError::BothConflict),
+                    HotkeyApplyError::Fatal(error) => Err(HotkeyLoadError::Fatal(error)),
+                },
             }
+        }
+    }
+}
+
+enum HotkeyApplyError {
+    Conflict(Hotkey),
+    Fatal(Win32Error),
+}
+
+/// Convert every hotkey-manager failure into the startup policy used by both registrations.
+/// Only raw ERROR_HOTKEY_ALREADY_REGISTERED is recoverable as a conflict.
+fn classify_hotkey_apply_error(error: ApplyError<Win32Error>) -> HotkeyApplyError {
+    match error {
+        ApplyError::Register { hotkey, source } => {
+            if classify_hotkey_error(source.code()) == HotkeyErrorClass::AlreadyRegistered {
+                HotkeyApplyError::Conflict(hotkey)
+            } else {
+                HotkeyApplyError::Fatal(source)
+            }
+        }
+        ApplyError::Unregister { source, .. } | ApplyError::Rollback { source, .. } => {
+            HotkeyApplyError::Fatal(source)
         }
     }
 }

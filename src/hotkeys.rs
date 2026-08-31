@@ -1,5 +1,25 @@
 use crate::config::{AppSettings, Hotkey};
 
+/// Win32 errors that can occur while registering the product hotkeys.
+pub const ERROR_HOTKEY_ALREADY_REGISTERED: u32 = 1409;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HotkeyErrorClass {
+    /// The requested combination is already owned by another application.
+    AlreadyRegistered,
+    /// The operation failed for a reason that must abort startup or the update.
+    Fatal,
+}
+
+/// Classify a raw Win32 error without depending on Windows APIs.
+pub const fn classify_hotkey_error(code: u32) -> HotkeyErrorClass {
+    if code == ERROR_HOTKEY_ALREADY_REGISTERED {
+        HotkeyErrorClass::AlreadyRegistered
+    } else {
+        HotkeyErrorClass::Fatal
+    }
+}
+
 pub trait HotkeyBackend {
     type Error: std::error::Error + Send + Sync + 'static;
 
@@ -133,5 +153,21 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
         }
         self.rollback_added(added)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ERROR_HOTKEY_ALREADY_REGISTERED, HotkeyErrorClass, classify_hotkey_error};
+
+    #[test]
+    fn only_already_registered_is_a_conflict() {
+        assert_eq!(
+            classify_hotkey_error(ERROR_HOTKEY_ALREADY_REGISTERED),
+            HotkeyErrorClass::AlreadyRegistered
+        );
+        assert_eq!(classify_hotkey_error(5), HotkeyErrorClass::Fatal);
+        assert_eq!(classify_hotkey_error(6), HotkeyErrorClass::Fatal);
+        assert_eq!(classify_hotkey_error(0xdead_beef), HotkeyErrorClass::Fatal);
     }
 }
