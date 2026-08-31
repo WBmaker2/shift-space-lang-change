@@ -1,6 +1,8 @@
 use std::ffi::c_void;
 
-use windows::Win32::Foundation::{ERROR_FILE_NOT_FOUND, ERROR_SUCCESS, ERROR_UNSUPPORTED_TYPE};
+use windows::Win32::Foundation::{
+    ERROR_FILE_NOT_FOUND, ERROR_MORE_DATA, ERROR_SUCCESS, ERROR_UNSUPPORTED_TYPE,
+};
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CURRENT_USER, KEY_READ, KEY_WRITE, REG_DWORD, REG_OPTION_NON_VOLATILE,
     REG_SAM_FLAGS, REG_SZ, REG_VALUE_TYPE, RRF_RT_REG_DWORD, RRF_RT_REG_SZ, RegCloseKey,
@@ -104,10 +106,14 @@ pub(crate) fn get_dword(key: &RegKey, name: &str) -> Result<Option<u32>, Win32Er
             Some(&mut size),
         )
     };
-    if code == ERROR_FILE_NOT_FOUND || code == ERROR_UNSUPPORTED_TYPE {
+    if code == ERROR_FILE_NOT_FOUND || code == ERROR_MORE_DATA || code == ERROR_UNSUPPORTED_TYPE {
         Ok(None)
     } else {
-        result(code).map(|()| Some(value))
+        result(code)?;
+        if value_type != REG_DWORD || size != std::mem::size_of::<u32>() as u32 {
+            return Ok(None);
+        }
+        Ok(Some(value))
     }
 }
 
