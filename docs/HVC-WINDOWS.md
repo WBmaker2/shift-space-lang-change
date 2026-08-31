@@ -4,7 +4,9 @@
 
 기록 규칙: 각 항목의 `결과`는 기본값을 `미검증`으로 둡니다. 실제로 확인한 뒤에만 `통과` 또는 `실패`로 바꾸고, 확인 환경과 증거 링크를 함께 남깁니다. 링크가 없으면 `없음`이라고 적습니다.
 
-## HVC 대상 후보
+## 과거 자동화 기준선 (RC.3; 최종 HVC 대상 아님)
+
+아래 RC.3 정보는 공개 전 자동화 패키지 검증의 과거 기준선으로 보존합니다. RC.3 artifact는 공개 후 Windows HVC에 사용할 최종 대상이 아니며, 아래 해시를 최종 v0.1.0 해시로 재사용해서는 안 됩니다.
 
 - 버전/tag: `0.1.0-rc.3` / `v0.1.0-rc.3`
 - commit: `13098466aad1dae8d4d4246064ec9cce8371422b`
@@ -14,9 +16,24 @@
 - 설치기 SHA-256: `dbf40fcbe45715fc9892e3c307527861c8159411309ecab24d14ade1bd5a33b9`
 - 앱 본체 SHA-256: `a3acb7a1caac814b6ba7521a7cdecd59667fcf2d84f0d7ff6d8c7d02f3b999f2`
 
+## 공개 후 HVC 대상 — 최종 v0.1.0 릴리스 자산
+
+공개 후 HVC는 GitHub Release의 최종 `v0.1.0` 설치기에서 수행합니다. RC.3 artifact가 아닌 최종 release asset을 내려받아 검증해야 하며, 최종 package run·tag·commit·artifact·hash가 확인되기 전에는 HVC를 시작하지 않습니다. 아래 placeholder는 최종 공개 후 실제 값으로 갱신하고, 확인되지 않은 hash는 추정해 입력하지 않습니다.
+
+- 저장소: [WBmaker2/shift-space-lang-change](https://github.com/WBmaker2/shift-space-lang-change)
+- Release: [GitHub latest release](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
+- 최종 설치기 직접 다운로드: [ShiftSpaceLangChange-Setup-0.1.0-x64.exe](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
+- 버전/tag: `v0.1.0` (최종 공개 후 확인)
+- 최종 package run: `<공개 후 최종 Windows package run ID 기록>`
+- 최종 tag commit: `<공개 후 v0.1.0 태그 commit SHA 기록>`
+- 최종 artifact: `<공개 후 최종 artifact 이름 및 ID 기록>`
+- 설치기 파일명: `ShiftSpaceLangChange-Setup-0.1.0-x64.exe`
+- 설치기 SHA-256: `<공개 후 최종 설치기 SHA-256 기록>`
+- 앱 본체 SHA-256: `<공개 후 최종 앱 본체 SHA-256 기록>`
+
 ## 권장 확인 순서
 
-1. Windows 10/11 x64 일반 사용자 계정에서 artifact를 내려받고 설치기 SHA-256을 확인합니다.
+1. Windows 10/11 x64 일반 사용자 계정에서 최종 v0.1.0 release asset을 내려받고 최종 설치기 SHA-256을 확인합니다.
 2. 관리자 권한 없이 설치하고, Microsoft 한국어 IME가 있는 메모장·브라우저·Office에서 두 단축키를 각각 확인합니다.
 3. 설정 창에서 두 체크박스를 하나씩 단독 활성화하고 마지막 활성 단축키를 끌 수 없는지 확인합니다.
 4. 창 닫기·트레이·중복 실행·로그인 자동 실행·자동 실행 해제를 확인합니다.
@@ -41,7 +58,7 @@
 ## 확인 메모
 
 - 한국어 Microsoft IME 설치 상태: 미검증
-- 실행 파일·설치 파일의 SHA-256: CI artifact 다운로드 후 macOS에서 확인 완료, Windows 원본 대조 미검증
+- 실행 파일·설치 파일의 SHA-256: RC.3 CI artifact는 macOS에서 확인 완료, 최종 v0.1.0 release asset의 Windows 원본 대조는 미검증
 - SmartScreen 서명 경고와 사용 안내: 미검증
 - 관리자 권한 프로그램 전면 상태의 UIPI 제한 안내: 미검증
 - Windows HVC 담당자/확인 환경: 미기록
