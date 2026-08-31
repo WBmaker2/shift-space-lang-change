@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::config::{AppSettings, Hotkey};
 
 /// Win32 errors that can occur while registering the product hotkeys.
@@ -17,6 +19,46 @@ pub const fn classify_hotkey_error(code: u32) -> HotkeyErrorClass {
         HotkeyErrorClass::AlreadyRegistered
     } else {
         HotkeyErrorClass::Fatal
+    }
+}
+
+/// Exposes only the provenance needed by the platform-neutral startup policy.
+pub trait HotkeyErrorSource {
+    fn code(&self) -> u32;
+    fn is_win32(&self) -> bool;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StartupHotkeyPhase {
+    Initial,
+    Fallback,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StartupHotkeyDecision {
+    Fallback { conflicting: Hotkey },
+    BothConflict,
+    Fatal,
+}
+
+/// Apply the same startup policy to initial and fallback registration failures.
+pub fn classify_startup_error<E: HotkeyErrorSource>(
+    phase: StartupHotkeyPhase,
+    error: &ApplyError<E>,
+) -> StartupHotkeyDecision {
+    let ApplyError::Register { hotkey, source } = error else {
+        return StartupHotkeyDecision::Fatal;
+    };
+    if !source.is_win32()
+        || classify_hotkey_error(source.code()) != HotkeyErrorClass::AlreadyRegistered
+    {
+        return StartupHotkeyDecision::Fatal;
+    }
+    match phase {
+        StartupHotkeyPhase::Initial => StartupHotkeyDecision::Fallback {
+            conflicting: *hotkey,
+        },
+        StartupHotkeyPhase::Fallback => StartupHotkeyDecision::BothConflict,
     }
 }
 
@@ -47,37 +89,39 @@ pub enum ApplyError<E> {
 pub struct HotkeyManager<B: HotkeyBackend> {
     backend: B,
     active: AppSettings,
+    registered: BTreeSet<Hotkey>,
 }
 
 impl<B: HotkeyBackend> Drop for HotkeyManager<B> {
     fn drop(&mut self) {
         // Best-effort release keeps a partially initialized process from leaving registrations
         // behind. The Windows backend owns no Rust resources that need a second shutdown pass.
-        for hotkey in self.active.enabled_hotkeys() {
-            let _ = self.backend.unregister(hotkey);
+        let registered: Vec<_> = self.registered.iter().copied().rev().collect();
+        for hotkey in registered {
+            if self.backend.unregister(hotkey).is_ok() {
+                self.registered.remove(&hotkey);
+            }
         }
     }
 }
 
 impl<B: HotkeyBackend> HotkeyManager<B> {
     pub fn new(mut backend: B, active: AppSettings) -> Result<Self, ApplyError<B::Error>> {
-        let mut registered = Vec::new();
+        let mut registered = BTreeSet::new();
         for hotkey in active.enabled_hotkeys() {
             if let Err(source) = backend.register(hotkey) {
-                for registered_hotkey in registered.into_iter().rev() {
-                    if let Err(rollback_source) = backend.unregister(registered_hotkey) {
-                        return Err(ApplyError::Rollback {
-                            operation: "unregister",
-                            hotkey: registered_hotkey,
-                            source: rollback_source,
-                        });
-                    }
+                if let Some(error) = rollback_registered(&mut backend, &mut registered) {
+                    return Err(error);
                 }
                 return Err(ApplyError::Register { hotkey, source });
             }
-            registered.push(hotkey);
+            registered.insert(hotkey);
         }
-        Ok(Self { backend, active })
+        Ok(Self {
+            backend,
+            active,
+            registered,
+        })
     }
 
     pub fn apply(&mut self, desired: AppSettings) -> Result<(), ApplyError<B::Error>> {
@@ -99,6 +143,7 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
                 self.rollback_added(&added)?;
                 return Err(ApplyError::Register { hotkey, source });
             }
+            self.registered.insert(hotkey);
             added.push(hotkey);
         }
 
@@ -109,6 +154,7 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
                 self.rollback(&added, &removed)?;
                 return Err(ApplyError::Unregister { hotkey, source });
             }
+            self.registered.remove(&hotkey);
             removed.push(hotkey);
         }
 
@@ -124,17 +170,30 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
         &self.backend
     }
 
+    /// Return the hotkeys that the backend has successfully registered.
+    pub fn registered_hotkeys(&self) -> BTreeSet<Hotkey> {
+        self.registered.clone()
+    }
+
     fn rollback_added(&mut self, added: &[Hotkey]) -> Result<(), ApplyError<B::Error>> {
+        let mut first_error = None;
         for &hotkey in added.iter().rev() {
-            self.backend
-                .unregister(hotkey)
-                .map_err(|source| ApplyError::Rollback {
-                    operation: "unregister",
-                    hotkey,
-                    source,
-                })?;
+            match self.backend.unregister(hotkey) {
+                Ok(()) => {
+                    self.registered.remove(&hotkey);
+                }
+                Err(source) => {
+                    if first_error.is_none() {
+                        first_error = Some(ApplyError::Rollback {
+                            operation: "unregister",
+                            hotkey,
+                            source,
+                        });
+                    }
+                }
+            }
         }
-        Ok(())
+        first_error.map_or(Ok(()), Err)
     }
 
     fn rollback(
@@ -142,23 +201,89 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
         added: &[Hotkey],
         removed: &[Hotkey],
     ) -> Result<(), ApplyError<B::Error>> {
+        let mut first_error = None;
         for &hotkey in removed.iter().rev() {
-            self.backend
-                .register(hotkey)
-                .map_err(|source| ApplyError::Rollback {
-                    operation: "register",
-                    hotkey,
-                    source,
-                })?;
+            match self.backend.register(hotkey) {
+                Ok(()) => {
+                    self.registered.insert(hotkey);
+                }
+                Err(source) => {
+                    if first_error.is_none() {
+                        first_error = Some(ApplyError::Rollback {
+                            operation: "register",
+                            hotkey,
+                            source,
+                        });
+                    }
+                }
+            }
         }
-        self.rollback_added(added)?;
-        Ok(())
+        if let Err(error) = self.rollback_added(added)
+            && first_error.is_none()
+        {
+            first_error = Some(error);
+        }
+        first_error.map_or(Ok(()), Err)
     }
+}
+
+fn rollback_registered<B: HotkeyBackend>(
+    backend: &mut B,
+    registered: &mut BTreeSet<Hotkey>,
+) -> Option<ApplyError<B::Error>> {
+    let hotkeys: Vec<_> = registered.iter().copied().rev().collect();
+    let mut first_error = None;
+    for hotkey in hotkeys {
+        match backend.unregister(hotkey) {
+            Ok(()) => {
+                registered.remove(&hotkey);
+            }
+            Err(source) => {
+                if first_error.is_none() {
+                    first_error = Some(ApplyError::Rollback {
+                        operation: "unregister",
+                        hotkey,
+                        source,
+                    });
+                }
+            }
+        }
+    }
+    first_error
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{ERROR_HOTKEY_ALREADY_REGISTERED, HotkeyErrorClass, classify_hotkey_error};
+    use std::fmt;
+
+    use super::{
+        ApplyError, ERROR_HOTKEY_ALREADY_REGISTERED, Hotkey, HotkeyErrorClass, HotkeyErrorSource,
+        StartupHotkeyDecision, StartupHotkeyPhase, classify_hotkey_error, classify_startup_error,
+    };
+
+    #[derive(Debug, Clone, Copy)]
+    struct Source {
+        code: u32,
+        is_win32: bool,
+    }
+
+    impl fmt::Display for Source {
+        fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(formatter, "error {}", self.code)
+        }
+    }
+
+    impl std::error::Error for Source {}
+
+    impl HotkeyErrorSource for Source {
+        fn code(&self) -> u32 {
+            self.code
+        }
+
+        fn is_win32(&self) -> bool {
+            self.is_win32
+        }
+    }
 
     #[test]
     fn only_already_registered_is_a_conflict() {
@@ -169,5 +294,82 @@ mod tests {
         assert_eq!(classify_hotkey_error(5), HotkeyErrorClass::Fatal);
         assert_eq!(classify_hotkey_error(6), HotkeyErrorClass::Fatal);
         assert_eq!(classify_hotkey_error(0xdead_beef), HotkeyErrorClass::Fatal);
+    }
+
+    #[test]
+    fn startup_policy_only_falls_back_for_initial_win32_1409() {
+        let conflict = ApplyError::Register {
+            hotkey: Hotkey::ShiftSpace,
+            source: Source {
+                code: ERROR_HOTKEY_ALREADY_REGISTERED,
+                is_win32: true,
+            },
+        };
+        assert_eq!(
+            classify_startup_error(StartupHotkeyPhase::Initial, &conflict),
+            StartupHotkeyDecision::Fallback {
+                conflicting: Hotkey::ShiftSpace
+            }
+        );
+        assert_eq!(
+            classify_startup_error(StartupHotkeyPhase::Fallback, &conflict),
+            StartupHotkeyDecision::BothConflict
+        );
+    }
+
+    #[test]
+    fn startup_policy_preserves_fatal_categories() {
+        for code in [5, 6, 0xdead_beef] {
+            let error = ApplyError::Register {
+                hotkey: Hotkey::CtrlSpace,
+                source: Source {
+                    code,
+                    is_win32: true,
+                },
+            };
+            assert_eq!(
+                classify_startup_error(StartupHotkeyPhase::Initial, &error),
+                StartupHotkeyDecision::Fatal
+            );
+        }
+
+        let non_win32_1409 = ApplyError::Register {
+            hotkey: Hotkey::CtrlSpace,
+            source: Source {
+                code: ERROR_HOTKEY_ALREADY_REGISTERED,
+                is_win32: false,
+            },
+        };
+        assert_eq!(
+            classify_startup_error(StartupHotkeyPhase::Initial, &non_win32_1409),
+            StartupHotkeyDecision::Fatal
+        );
+    }
+
+    #[test]
+    fn unregister_and_rollback_are_always_fatal() {
+        let unregister = ApplyError::Unregister {
+            hotkey: Hotkey::ShiftSpace,
+            source: Source {
+                code: ERROR_HOTKEY_ALREADY_REGISTERED,
+                is_win32: true,
+            },
+        };
+        let rollback = ApplyError::Rollback {
+            operation: "register",
+            hotkey: Hotkey::CtrlSpace,
+            source: Source {
+                code: ERROR_HOTKEY_ALREADY_REGISTERED,
+                is_win32: true,
+            },
+        };
+        assert_eq!(
+            classify_startup_error(StartupHotkeyPhase::Initial, &unregister),
+            StartupHotkeyDecision::Fatal
+        );
+        assert_eq!(
+            classify_startup_error(StartupHotkeyPhase::Fallback, &rollback),
+            StartupHotkeyDecision::Fatal
+        );
     }
 }

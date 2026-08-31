@@ -1,7 +1,7 @@
 use crate::config::Hotkey;
 use crate::hotkeys::HotkeyBackend;
 use crate::windows_mapping::hotkey_spec;
-use windows::Win32::Foundation::{GetLastError, HWND};
+use windows::Win32::Foundation::{HWND, WIN32_ERROR};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, HOT_KEY_MODIFIERS, RegisterHotKey, UnregisterHotKey, VK_CONTROL, VK_SHIFT,
     VK_SPACE,
@@ -34,12 +34,7 @@ impl HotkeyBackend for WinHotkeyBackend {
                 spec.virtual_key,
             )
         };
-        result.map_err(|_| {
-            // Safety: RegisterHotKey documents GetLastError as the failure source. This is the
-            // first call after the failing API on this thread, so its thread-local raw Win32 code
-            // is read before any other operation can overwrite it.
-            Win32Error::new(unsafe { GetLastError().0 })
-        })
+        result.map_err(win_error)
     }
 
     fn unregister(&mut self, hotkey: Hotkey) -> Result<(), Self::Error> {
@@ -47,12 +42,20 @@ impl HotkeyBackend for WinHotkeyBackend {
         // Safety: the HWND and identifier are the same pair previously used for registration;
         // Windows does not retain a pointer to Rust memory during this call.
         let result = unsafe { UnregisterHotKey(Some(self.hwnd), spec.id) };
-        result.map_err(|_| {
-            // Safety: UnregisterHotKey documents GetLastError as the failure source. This is the
-            // first call after the failing API on this thread, so its thread-local raw Win32 code
-            // is read before any other operation can overwrite it.
-            Win32Error::new(unsafe { GetLastError().0 })
-        })
+        result.map_err(win_error)
+    }
+}
+
+fn win_error(error: windows::core::Error) -> Win32Error {
+    // The BOOL wrappers convert a failing Win32 last-error value with the official
+    // HRESULT_FROM_WIN32 transformation. Decode that HRESULT instead of querying the mutable
+    // thread-local last-error slot again after the wrapper has returned.
+    if let Some(code) = WIN32_ERROR::from_error(&error) {
+        Win32Error::new(code.0)
+    } else {
+        // Keep an unexpected non-Win32 HRESULT for diagnostics, but mark it as such so the
+        // startup classifier cannot mistake a coincidental numeric value for error 1409.
+        Win32Error::from_hresult(error.code().0 as u32)
     }
 }
 

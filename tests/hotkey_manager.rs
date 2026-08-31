@@ -1,4 +1,6 @@
-use std::collections::BTreeSet;
+use std::cell::RefCell;
+use std::collections::{BTreeSet, VecDeque};
+use std::rc::Rc;
 
 use shift_space_lang_change::config::{AppSettings, Hotkey};
 use shift_space_lang_change::hotkeys::{HotkeyBackend, HotkeyManager};
@@ -226,4 +228,155 @@ fn initial_registration_rollback_failure_is_reported() {
             ..
         }
     ));
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Operation {
+    Register(Hotkey),
+    Unregister(Hotkey),
+}
+
+#[derive(Debug, Default)]
+struct ScriptedTrace {
+    registered: BTreeSet<Hotkey>,
+    calls: Vec<Operation>,
+}
+
+#[derive(Debug)]
+struct ScriptedBackend {
+    trace: Rc<RefCell<ScriptedTrace>>,
+    outcomes: VecDeque<Result<(), FakeError>>,
+}
+
+impl ScriptedBackend {
+    fn new(
+        outcomes: impl IntoIterator<Item = Result<(), FakeError>>,
+    ) -> (Self, Rc<RefCell<ScriptedTrace>>) {
+        let trace = Rc::new(RefCell::new(ScriptedTrace::default()));
+        (
+            Self {
+                trace: Rc::clone(&trace),
+                outcomes: outcomes.into_iter().collect(),
+            },
+            trace,
+        )
+    }
+
+    fn outcome(&mut self) -> Result<(), FakeError> {
+        self.outcomes.pop_front().unwrap_or(Ok(()))
+    }
+}
+
+impl HotkeyBackend for ScriptedBackend {
+    type Error = FakeError;
+
+    fn register(&mut self, hotkey: Hotkey) -> Result<(), Self::Error> {
+        self.trace
+            .borrow_mut()
+            .calls
+            .push(Operation::Register(hotkey));
+        let outcome = self.outcome();
+        if outcome.is_ok() {
+            self.trace.borrow_mut().registered.insert(hotkey);
+        }
+        outcome
+    }
+
+    fn unregister(&mut self, hotkey: Hotkey) -> Result<(), Self::Error> {
+        self.trace
+            .borrow_mut()
+            .calls
+            .push(Operation::Unregister(hotkey));
+        let outcome = self.outcome();
+        if outcome.is_ok() {
+            self.trace.borrow_mut().registered.remove(&hotkey);
+        }
+        outcome
+    }
+}
+
+#[test]
+fn rollback_continues_after_first_restore_error_and_cleans_added_hotkey() {
+    let (backend, trace) = ScriptedBackend::new([
+        Ok(()),         // initial Shift + Space registration
+        Ok(()),         // add Ctrl + Space
+        Err(FakeError), // remove Shift + Space fails
+        Err(FakeError), // restoring Shift + Space is the first rollback error
+        Ok(()),         // removing added Ctrl + Space still runs
+    ]);
+    let initial = AppSettings::new(true, false).unwrap();
+    let mut manager = HotkeyManager::new(backend, initial).unwrap();
+
+    let error = manager
+        .apply(AppSettings::new(false, true).unwrap())
+        .unwrap_err();
+
+    assert!(matches!(
+        error,
+        shift_space_lang_change::hotkeys::ApplyError::Rollback {
+            operation: "register",
+            hotkey: Hotkey::ShiftSpace,
+            ..
+        }
+    ));
+    assert_eq!(manager.active_settings(), initial);
+    assert_eq!(manager.registered_hotkeys(), [Hotkey::ShiftSpace].into());
+    assert_eq!(trace.borrow().registered, [Hotkey::ShiftSpace].into());
+    assert_eq!(
+        trace.borrow().calls,
+        vec![
+            Operation::Register(Hotkey::ShiftSpace),
+            Operation::Register(Hotkey::CtrlSpace),
+            Operation::Unregister(Hotkey::ShiftSpace),
+            Operation::Register(Hotkey::ShiftSpace),
+            Operation::Unregister(Hotkey::CtrlSpace),
+        ]
+    );
+}
+
+#[test]
+fn drop_retries_added_registration_left_by_rollback_failure() {
+    let (backend, trace) = ScriptedBackend::new([
+        Ok(()),         // initial Shift + Space registration
+        Ok(()),         // add Ctrl + Space
+        Err(FakeError), // remove Shift + Space fails
+        Ok(()),         // restoring Shift + Space
+        Err(FakeError), // rollback cannot remove added Ctrl + Space
+        Ok(()),         // Drop retries Ctrl + Space
+        Ok(()),         // Drop releases Shift + Space
+    ]);
+    let initial = AppSettings::new(true, false).unwrap();
+    let mut manager = HotkeyManager::new(backend, initial).unwrap();
+
+    let error = manager
+        .apply(AppSettings::new(false, true).unwrap())
+        .unwrap_err();
+    assert!(matches!(
+        error,
+        shift_space_lang_change::hotkeys::ApplyError::Rollback {
+            operation: "unregister",
+            hotkey: Hotkey::CtrlSpace,
+            ..
+        }
+    ));
+    assert_eq!(manager.active_settings(), initial);
+    assert_eq!(
+        manager.registered_hotkeys(),
+        [Hotkey::ShiftSpace, Hotkey::CtrlSpace].into()
+    );
+
+    drop(manager);
+    assert_eq!(trace.borrow().registered, BTreeSet::new());
+    assert_eq!(
+        trace.borrow().calls,
+        vec![
+            Operation::Register(Hotkey::ShiftSpace),
+            Operation::Register(Hotkey::CtrlSpace),
+            Operation::Unregister(Hotkey::ShiftSpace),
+            Operation::Register(Hotkey::ShiftSpace),
+            Operation::Unregister(Hotkey::CtrlSpace),
+            Operation::Unregister(Hotkey::CtrlSpace),
+            Operation::Unregister(Hotkey::ShiftSpace),
+        ]
+    );
 }

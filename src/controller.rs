@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fmt;
 use std::time::Duration;
 
@@ -183,6 +184,11 @@ where
     /// Return the registration state used by the manager for UI reconciliation and diagnostics.
     pub fn registered_hotkeys(&self) -> AppSettings {
         self.hotkeys.active_settings()
+    }
+
+    /// Return the hotkeys that are actually registered with the platform backend.
+    pub fn registered_hotkey_set(&self) -> BTreeSet<Hotkey> {
+        self.hotkeys.registered_hotkeys()
     }
 }
 

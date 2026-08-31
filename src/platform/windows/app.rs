@@ -1,8 +1,11 @@
+use std::collections::BTreeSet;
 use std::time::Instant;
 
 use crate::config::{AppSettings, Hotkey};
 use crate::controller::{AppController, ControllerError, ControllerEvent};
-use crate::hotkeys::{ApplyError, HotkeyErrorClass, HotkeyManager, classify_hotkey_error};
+use crate::hotkeys::{
+    ApplyError, HotkeyManager, StartupHotkeyDecision, StartupHotkeyPhase, classify_startup_error,
+};
 use crate::launch::LaunchMode;
 use crate::platform::windows::ui::{
     TrayIcon, UiHandles, create_settings_window, read_ui_event, render_state,
@@ -127,9 +130,12 @@ fn load_hotkeys(
     match HotkeyManager::new(WinHotkeyBackend::new(hwnd), requested) {
         Ok(manager) => Ok((manager, "실행 중".to_owned())),
         Err(error) => {
-            let conflict = match classify_hotkey_apply_error(error) {
+            let conflict = match classify_hotkey_apply_error(StartupHotkeyPhase::Initial, error) {
                 HotkeyApplyError::Conflict(hotkey) => hotkey,
                 HotkeyApplyError::Fatal(error) => return Err(HotkeyLoadError::Fatal(error)),
+                HotkeyApplyError::BothConflict => {
+                    unreachable!("initial registration cannot conflict twice")
+                }
             };
             let fallback_hotkey = match conflict {
                 Hotkey::ShiftSpace => Hotkey::CtrlSpace,
@@ -152,10 +158,13 @@ fn load_hotkeys(
                         ),
                     ))
                 }
-                Err(error) => match classify_hotkey_apply_error(error) {
-                    HotkeyApplyError::Conflict(_) => Err(HotkeyLoadError::BothConflict),
-                    HotkeyApplyError::Fatal(error) => Err(HotkeyLoadError::Fatal(error)),
-                },
+                Err(error) => {
+                    match classify_hotkey_apply_error(StartupHotkeyPhase::Fallback, error) {
+                        HotkeyApplyError::Conflict(_) => Err(HotkeyLoadError::BothConflict),
+                        HotkeyApplyError::BothConflict => Err(HotkeyLoadError::BothConflict),
+                        HotkeyApplyError::Fatal(error) => Err(HotkeyLoadError::Fatal(error)),
+                    }
+                }
             }
         }
     }
@@ -163,21 +172,26 @@ fn load_hotkeys(
 
 enum HotkeyApplyError {
     Conflict(Hotkey),
+    BothConflict,
     Fatal(Win32Error),
 }
 
 /// Convert every hotkey-manager failure into the startup policy used by both registrations.
 /// Only raw ERROR_HOTKEY_ALREADY_REGISTERED is recoverable as a conflict.
-fn classify_hotkey_apply_error(error: ApplyError<Win32Error>) -> HotkeyApplyError {
-    match error {
-        ApplyError::Register { hotkey, source } => {
-            if classify_hotkey_error(source.code()) == HotkeyErrorClass::AlreadyRegistered {
-                HotkeyApplyError::Conflict(hotkey)
-            } else {
-                HotkeyApplyError::Fatal(source)
-            }
-        }
-        ApplyError::Unregister { source, .. } | ApplyError::Rollback { source, .. } => {
+fn classify_hotkey_apply_error(
+    phase: StartupHotkeyPhase,
+    error: ApplyError<Win32Error>,
+) -> HotkeyApplyError {
+    let decision = classify_startup_error(phase, &error);
+    match decision {
+        StartupHotkeyDecision::Fallback { conflicting } => HotkeyApplyError::Conflict(conflicting),
+        StartupHotkeyDecision::BothConflict => HotkeyApplyError::BothConflict,
+        StartupHotkeyDecision::Fatal => {
+            let source = match error {
+                ApplyError::Register { source, .. }
+                | ApplyError::Unregister { source, .. }
+                | ApplyError::Rollback { source, .. } => source,
+            };
             HotkeyApplyError::Fatal(source)
         }
     }
@@ -215,7 +229,7 @@ fn message_loop(
 
         if message.message == WM_HOTKEY {
             let hotkey = hotkey_from_id(message.wParam.0 as i32);
-            if should_process_hotkey(controller.registered_hotkeys(), hotkey)
+            if should_process_hotkey(&controller.registered_hotkey_set(), hotkey)
                 && controller.on_hotkey(started.elapsed())
             {
                 timer.start()?;
@@ -352,8 +366,8 @@ fn hotkey_from_id(id: i32) -> Option<Hotkey> {
         .find(|&hotkey| hotkey_spec(hotkey).id == id)
 }
 
-fn should_process_hotkey(settings: AppSettings, hotkey: Option<Hotkey>) -> bool {
-    hotkey.is_some_and(|hotkey| settings.is_enabled(hotkey))
+fn should_process_hotkey(registered: &BTreeSet<Hotkey>, hotkey: Option<Hotkey>) -> bool {
+    hotkey.is_some_and(|hotkey| registered.contains(&hotkey))
 }
 
 fn hotkey_label(hotkey: Hotkey) -> &'static str {
@@ -408,18 +422,21 @@ fn wide(value: &str) -> Vec<u16> {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::{AppSettings, Hotkey};
+    use crate::config::Hotkey;
 
     use super::should_process_hotkey;
 
     #[test]
     fn stale_or_disabled_hotkey_messages_are_ignored() {
-        let only_control = AppSettings::new(false, true).expect("one hotkey remains");
+        let only_control = [Hotkey::CtrlSpace].into_iter().collect();
         assert!(!should_process_hotkey(
-            only_control,
+            &only_control,
             Some(Hotkey::ShiftSpace)
         ));
-        assert!(should_process_hotkey(only_control, Some(Hotkey::CtrlSpace)));
-        assert!(!should_process_hotkey(only_control, None));
+        assert!(should_process_hotkey(
+            &only_control,
+            Some(Hotkey::CtrlSpace)
+        ));
+        assert!(!should_process_hotkey(&only_control, None));
     }
 }
