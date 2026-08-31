@@ -59,5 +59,5 @@ git diff --check
 
 결과: focused 7개 PASS, 전체 테스트 13개 PASS, fmt/clippy/diff check PASS.
 
-커밋: 수정사항은 다음 커밋으로 기록 예정입니다.
+커밋: `d1ed331 fix: make hotkey rollback fully transactional`
 - 커밋 전 `git diff --check`를 통과시켰습니다.
