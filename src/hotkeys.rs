@@ -35,7 +35,13 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
         for hotkey in active.enabled_hotkeys() {
             if let Err(source) = backend.register(hotkey) {
                 for registered_hotkey in registered.into_iter().rev() {
-                    let _ = backend.unregister(registered_hotkey);
+                    if let Err(rollback_source) = backend.unregister(registered_hotkey) {
+                        return Err(ApplyError::Rollback {
+                            operation: "unregister",
+                            hotkey: registered_hotkey,
+                            source: rollback_source,
+                        });
+                    }
                 }
                 return Err(ApplyError::Register { hotkey, source });
             }
@@ -69,6 +75,7 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
         let mut removed = Vec::new();
         for hotkey in removals {
             if let Err(source) = self.backend.unregister(hotkey) {
+                removed.push(hotkey);
                 self.rollback(&added, &removed)?;
                 return Err(ApplyError::Unregister { hotkey, source });
             }
@@ -105,7 +112,6 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
         added: &[Hotkey],
         removed: &[Hotkey],
     ) -> Result<(), ApplyError<B::Error>> {
-        self.rollback_added(added)?;
         for &hotkey in removed.iter().rev() {
             self.backend
                 .register(hotkey)
@@ -115,6 +121,7 @@ impl<B: HotkeyBackend> HotkeyManager<B> {
                     source,
                 })?;
         }
+        self.rollback_added(added)?;
         Ok(())
     }
 }

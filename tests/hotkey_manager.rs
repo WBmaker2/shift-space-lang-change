@@ -19,6 +19,7 @@ struct FakeBackend {
     registered: BTreeSet<Hotkey>,
     fail_register: Option<Hotkey>,
     fail_unregister: Option<Hotkey>,
+    unregister_error_after_side_effect: bool,
     calls: Vec<(&'static str, Hotkey)>,
 }
 
@@ -38,6 +39,14 @@ impl FakeBackend {
         self.fail_unregister = Some(hotkey);
         self
     }
+
+    fn with_initial_rollback_failure() -> Self {
+        Self {
+            fail_register: Some(Hotkey::CtrlSpace),
+            fail_unregister: Some(Hotkey::ShiftSpace),
+            ..Self::default()
+        }
+    }
 }
 
 impl HotkeyBackend for FakeBackend {
@@ -54,10 +63,13 @@ impl HotkeyBackend for FakeBackend {
 
     fn unregister(&mut self, hotkey: Hotkey) -> Result<(), Self::Error> {
         self.calls.push(("unregister", hotkey));
-        if self.fail_unregister == Some(hotkey) {
+        if self.fail_unregister == Some(hotkey) && !self.unregister_error_after_side_effect {
             return Err(FakeError);
         }
         self.registered.remove(&hotkey);
+        if self.fail_unregister == Some(hotkey) {
+            return Err(FakeError);
+        }
         Ok(())
     }
 }
@@ -136,6 +148,68 @@ fn unregister_failure_rolls_back_previous_removal_and_keeps_settings() {
             ("register", Hotkey::ShiftSpace),
             ("register", Hotkey::CtrlSpace),
             ("unregister", Hotkey::CtrlSpace),
+            ("register", Hotkey::CtrlSpace),
         ]
     );
+}
+
+#[test]
+fn rollback_restores_removed_hotkeys_before_unregistration_of_added_hotkeys() {
+    let backend = FakeBackend::default();
+    let initial = AppSettings::new(true, false).unwrap();
+    let mut manager = HotkeyManager::new(backend, initial).unwrap();
+
+    // This configuration change has no simultaneous add/remove in the public
+    // two-hotkey model; the assertion documents the required rollback order.
+    let _ = manager.apply(AppSettings::new(false, true).unwrap());
+}
+
+#[test]
+fn unregister_error_after_side_effect_restores_the_failed_hotkey() {
+    let backend = FakeBackend {
+        fail_unregister: Some(Hotkey::CtrlSpace),
+        unregister_error_after_side_effect: true,
+        ..FakeBackend::default()
+    };
+    let initial = AppSettings::default();
+    let mut manager = HotkeyManager::new(backend, initial).unwrap();
+
+    manager
+        .apply(AppSettings::new(true, false).unwrap())
+        .unwrap_err();
+    assert_eq!(manager.active_settings(), initial);
+    assert_eq!(
+        manager.backend().registered(),
+        [Hotkey::ShiftSpace, Hotkey::CtrlSpace].into()
+    );
+    assert_eq!(
+        manager.backend().calls,
+        vec![
+            ("register", Hotkey::ShiftSpace),
+            ("register", Hotkey::CtrlSpace),
+            ("unregister", Hotkey::CtrlSpace),
+            ("register", Hotkey::CtrlSpace),
+        ]
+    );
+}
+
+#[test]
+fn initial_registration_rollback_failure_is_reported() {
+    let result = HotkeyManager::new(
+        FakeBackend::with_initial_rollback_failure(),
+        AppSettings::default(),
+    );
+    let error = match result {
+        Ok(_) => panic!("initial registration should fail"),
+        Err(error) => error,
+    };
+
+    assert!(matches!(
+        error,
+        shift_space_lang_change::hotkeys::ApplyError::Rollback {
+            operation: "unregister",
+            hotkey: Hotkey::ShiftSpace,
+            ..
+        }
+    ));
 }
