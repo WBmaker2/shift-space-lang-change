@@ -155,13 +155,27 @@ fn unregister_failure_rolls_back_previous_removal_and_keeps_settings() {
 
 #[test]
 fn rollback_restores_removed_hotkeys_before_unregistration_of_added_hotkeys() {
-    let backend = FakeBackend::default();
     let initial = AppSettings::new(true, false).unwrap();
+    let backend = FakeBackend {
+        fail_unregister: Some(Hotkey::ShiftSpace),
+        ..FakeBackend::default()
+    };
     let mut manager = HotkeyManager::new(backend, initial).unwrap();
+    let desired = AppSettings::new(false, true).unwrap();
 
-    // This configuration change has no simultaneous add/remove in the public
-    // two-hotkey model; the assertion documents the required rollback order.
-    let _ = manager.apply(AppSettings::new(false, true).unwrap());
+    manager.apply(desired).unwrap_err();
+    assert_eq!(manager.active_settings(), initial);
+    assert_eq!(manager.backend().registered(), [Hotkey::ShiftSpace].into());
+    assert_eq!(
+        manager.backend().calls,
+        vec![
+            ("register", Hotkey::ShiftSpace),
+            ("register", Hotkey::CtrlSpace),
+            ("unregister", Hotkey::ShiftSpace),
+            ("register", Hotkey::ShiftSpace),
+            ("unregister", Hotkey::CtrlSpace),
+        ]
+    );
 }
 
 #[test]
