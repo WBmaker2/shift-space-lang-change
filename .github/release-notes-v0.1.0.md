@@ -1,10 +1,11 @@
 # 한/영 전환 도우미 v0.1.0
 
-2026-09-01 공개 선행 릴리스입니다. Windows 실기기 HVC는 공개 후 후속 검증으로 진행하며, 문제가 확인되면 패치 릴리스로 수정합니다.
+2026-09-01 공개 릴리스입니다. Windows 실기기 HVC는 공개 후 후속 검증으로 진행하며, 문제가 확인되면 패치 릴리스로 수정합니다.
 
 ## 설치
 
 - [ShiftSpaceLangChange-Setup-0.1.0-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.0/SHA256SUMS.txt)
 - [GitHub 최신 릴리스](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
 
 릴리스 자산 이름은 `ShiftSpaceLangChange-Setup-0.1.0-x64.exe`입니다. 설치기는 관리자 권한을 요구하지 않으며 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 현재 사용자 범위로 설치합니다.
@@ -26,10 +27,13 @@
 
 ## 검증 완료
 
-- 기능 브랜치 CI `33411398369`: Ubuntu core와 Windows job 통과
-- RC.3 Windows package run `33413889332`: Windows 테스트·clippy, release EXE, NSIS 컴파일·범위 검사·출력 검증·artifact 업로드 통과
-- RC.3 artifact에서 Windows x64 PE 실행 파일과 NSIS 설치기 형식·크기·SHA-256 독립 확인
-- 공개 릴리스에 사용할 설치기 파일명과 직접 다운로드 경로를 문서화
+- PR [#1](https://github.com/WBmaker2/shift-space-lang-change/pull/1) 병합 및 `v0.1.0` tag commit `38133bbb52771418dcd68566e4ca93550da21cf0` 확인
+- `main` CI [run 33444967595](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33444967595), tag CI [run 33445159584](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33445159584), Windows package [run 33445159572](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33445159572) 모두 성공
+- 최종 artifact `shift-space-lang-change-windows-x64` (id `9777782027`, archive 196,697 bytes, 만료 예정 `2026-11-29T22:13:01Z`) 업로드 확인
+- `shift-space-lang-change.exe`: 158,720 bytes, SHA-256 `139960bfd1dd658df3fda616f089f5868ba7b1f0d6b98214ae2ecfe0957977e8`
+- `ShiftSpaceLangChange-Setup-0.1.0-x64.exe`: 124,937 bytes, SHA-256 `290fbf96855a5bfcef3d26bed2ec37d1c0f582d937f4306e64188b36b0c181f6`
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.0/SHA256SUMS.txt)에서 두 파일의 SHA-256 기록 확인
+- 공개 [v0.1.0 release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.0)와 latest 설치기 재다운로드의 크기·SHA-256 일치 확인
 
 ## 아직 완료하지 않은 검증 및 제한
 

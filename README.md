@@ -16,6 +16,7 @@ Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 
 
 - [ShiftSpaceLangChange-Setup-0.1.0-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
 - [GitHub 최신 릴리스 페이지](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.0/SHA256SUMS.txt)
 
 Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
 

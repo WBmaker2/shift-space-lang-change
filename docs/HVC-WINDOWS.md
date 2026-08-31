@@ -18,18 +18,21 @@
 
 ## 공개 후 HVC 대상 — 최종 v0.1.0 릴리스 자산
 
-공개 후 HVC는 GitHub Release의 최종 `v0.1.0` 설치기에서 수행합니다. RC.3 artifact가 아닌 최종 release asset을 내려받아 검증해야 하며, 최종 package run·tag·commit·artifact·hash가 확인되기 전에는 HVC를 시작하지 않습니다. 아래 placeholder는 최종 공개 후 실제 값으로 갱신하고, 확인되지 않은 hash는 추정해 입력하지 않습니다.
+공개 후 HVC는 GitHub Release의 최종 `v0.1.0` 설치기에서 수행합니다. 아래에는 공개 릴리스와 자동 검증에서 확인한 최종 자산 정보를 기록했으며, 이 기록은 Windows 실기기 HVC 통과를 뜻하지 않습니다. HVC 표와 실기기 항목은 실제 Windows 환경에서 확인하기 전까지 `미검증`으로 유지합니다.
 
 - 저장소: [WBmaker2/shift-space-lang-change](https://github.com/WBmaker2/shift-space-lang-change)
-- Release: [GitHub latest release](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
-- 최종 설치기 직접 다운로드: [ShiftSpaceLangChange-Setup-0.1.0-x64.exe](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
-- 버전/tag: `v0.1.0` (최종 공개 후 확인)
-- 최종 package run: `<공개 후 최종 Windows package run ID 기록>`
-- 최종 tag commit: `<공개 후 v0.1.0 태그 commit SHA 기록>`
-- 최종 artifact: `<공개 후 최종 artifact 이름 및 ID 기록>`
+- Release: [GitHub v0.1.0 release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.0)
+- 최종 설치기 직접 다운로드: [ShiftSpaceLangChange-Setup-0.1.0-x64.exe](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.0/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
+- 버전/tag: `v0.1.0` (최종 공개 확인)
+- 최종 package run: [33445159572](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33445159572) (성공)
+- 최종 tag commit: `38133bbb52771418dcd68566e4ca93550da21cf0`
+- 최종 artifact: `shift-space-lang-change-windows-x64` (id `9777782027`, archive 196,697 bytes, 만료 예정 `2026-11-29T22:13:01Z`)
 - 설치기 파일명: `ShiftSpaceLangChange-Setup-0.1.0-x64.exe`
-- 설치기 SHA-256: `<공개 후 최종 설치기 SHA-256 기록>`
-- 앱 본체 SHA-256: `<공개 후 최종 앱 본체 SHA-256 기록>`
+- 설치기 크기: 124,937 bytes
+- 설치기 SHA-256: `290fbf96855a5bfcef3d26bed2ec37d1c0f582d937f4306e64188b36b0c181f6`
+- 앱 본체 크기: 158,720 bytes
+- 앱 본체 SHA-256: `139960bfd1dd658df3fda616f089f5868ba7b1f0d6b98214ae2ecfe0957977e8`
+- SHA256SUMS: [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.0/SHA256SUMS.txt)
 
 ## 권장 확인 순서
 
@@ -58,7 +61,7 @@
 ## 확인 메모
 
 - 한국어 Microsoft IME 설치 상태: 미검증
-- 실행 파일·설치 파일의 SHA-256: RC.3 CI artifact는 macOS에서 확인 완료, 최종 v0.1.0 release asset의 Windows 원본 대조는 미검증
+- 실행 파일·설치 파일의 SHA-256: 최종 v0.1.0 공개 release asset과 [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.0/SHA256SUMS.txt) 대조 완료; Windows 실기기 HVC는 미검증
 - SmartScreen 서명 경고와 사용 안내: 미검증
 - 관리자 권한 프로그램 전면 상태의 UIPI 제한 안내: 미검증
 - Windows HVC 담당자/확인 환경: 미기록
