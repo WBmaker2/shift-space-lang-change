@@ -20,8 +20,8 @@ use super::ui::window::WM_APP_TRAY;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     DispatchMessageW, GetMessageW, IsDialogMessageW, KillTimer, MB_ICONERROR, MB_OK, MSG,
-    MessageBoxW, PostQuitMessage, SW_HIDE, SW_SHOW, SetForegroundWindow, ShowWindow,
-    TranslateMessage, WM_DESTROY, WM_HOTKEY, WM_TIMER,
+    MessageBoxW, PM_REMOVE, PeekMessageW, PostQuitMessage, SW_HIDE, SW_SHOW, SetForegroundWindow,
+    ShowWindow, TranslateMessage, WM_DESTROY, WM_HOTKEY, WM_TIMER,
 };
 use windows::core::PCWSTR;
 
@@ -187,7 +187,8 @@ fn message_loop(
             continue;
         }
 
-        if message.message == WM_TIMER && message.wParam.0 == TIMER_ID {
+        if message.message == WM_TIMER && should_process_timer(timer.is_active(), message.wParam.0)
+        {
             let now = started.elapsed();
             match controller.poll_toggle(now, keys_are_released()) {
                 Ok(ControllerEvent::ToggleTimedOut) => {
@@ -315,6 +316,10 @@ fn hotkey_from_id(id: i32) -> Option<Hotkey> {
         .find(|&hotkey| hotkey_spec(hotkey).id == id)
 }
 
+fn should_process_timer(active: bool, id: usize) -> bool {
+    active && id == TIMER_ID
+}
+
 fn hotkey_label(hotkey: Hotkey) -> &'static str {
     match hotkey {
         Hotkey::ShiftSpace => "Shift + Space",
@@ -339,6 +344,9 @@ impl TimerGuard {
         if self.active {
             return Ok(());
         }
+        // KillTimer -> drain -> SetTimer is intentional: a WM_TIMER already queued for this
+        // window must not be consumed by the next hotkey release cycle.
+        self.kill_and_drain();
         // Safety: hwnd is the app-owned settings window and the null callback requests WM_TIMER
         // messages on this thread; the scalar timer id and interval are valid Win32 values.
         let timer = unsafe {
@@ -361,12 +369,24 @@ impl TimerGuard {
         if !self.active {
             return;
         }
-        // Safety: the timer belongs to the owned settings window and stop is idempotent, so the
-        // timer is removed at most once for each successful start.
+        self.kill_and_drain();
+        self.active = false;
+    }
+
+    fn is_active(&self) -> bool {
+        self.active
+    }
+
+    fn kill_and_drain(&self) {
+        // Safety: the timer belongs to the owned settings window and the app uses no other timer
+        // on this HWND. PeekMessageW removes only this timer id, preserving unrelated queue work.
         unsafe {
             let _ = KillTimer(Some(self.hwnd), TIMER_ID);
+            let mut queued = MSG::default();
+            while PeekMessageW(&mut queued, Some(self.hwnd), WM_TIMER, WM_TIMER, PM_REMOVE)
+                .as_bool()
+            {}
         }
-        self.active = false;
     }
 }
 
@@ -417,4 +437,16 @@ pub fn show_error_message(title: &str, body: &str) {
 
 fn wide(value: &str) -> Vec<u16> {
     value.encode_utf16().chain(std::iter::once(0)).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{TIMER_ID, should_process_timer};
+
+    #[test]
+    fn stale_or_inactive_timer_messages_are_ignored() {
+        assert!(!should_process_timer(false, TIMER_ID));
+        assert!(!should_process_timer(true, TIMER_ID + 1));
+        assert!(should_process_timer(true, TIMER_ID));
+    }
 }

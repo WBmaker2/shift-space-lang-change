@@ -174,6 +174,13 @@ fn write_utf16_truncated(destination: &mut [u16], value: &str) {
     for (slot, unit) in destination[..payload].iter_mut().zip(value.encode_utf16()) {
         *slot = unit;
     }
+    if payload > 0 && is_high_surrogate(destination[payload - 1]) {
+        destination[payload - 1] = 0;
+    }
+}
+
+fn is_high_surrogate(unit: u16) -> bool {
+    (0xD800..=0xDBFF).contains(&unit)
 }
 
 fn active_summary(settings: AppSettings) -> String {
@@ -215,5 +222,12 @@ mod tests {
         let mut payload = [9_u16; 4];
         write_utf16_truncated(&mut payload, "A");
         assert_eq!(payload, ['A' as u16, 0, 0, 0]);
+    }
+
+    #[test]
+    fn notification_payload_does_not_split_surrogate_pairs() {
+        let mut payload = [0_u16; 3];
+        write_utf16_truncated(&mut payload, "A😀");
+        assert_eq!(payload, ['A' as u16, 0, 0]);
     }
 }
