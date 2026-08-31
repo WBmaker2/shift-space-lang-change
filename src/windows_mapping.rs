@@ -13,6 +13,21 @@ pub struct KeyStroke {
     pub key_up: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SendInputDecision {
+    Complete,
+    RecoverKeyUp,
+    Failed,
+}
+
+pub fn send_input_decision(sent: u32) -> SendInputDecision {
+    match sent {
+        2 => SendInputDecision::Complete,
+        1 => SendInputDecision::RecoverKeyUp,
+        _ => SendInputDecision::Failed,
+    }
+}
+
 pub fn hotkey_spec(hotkey: Hotkey) -> HotkeySpec {
     match hotkey {
         Hotkey::ShiftSpace => HotkeySpec {

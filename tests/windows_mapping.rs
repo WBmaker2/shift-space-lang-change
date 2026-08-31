@@ -1,5 +1,7 @@
 use shift_space_lang_change::config::Hotkey;
-use shift_space_lang_change::windows_mapping::{hangul_strokes, hotkey_spec};
+use shift_space_lang_change::windows_mapping::{
+    SendInputDecision, hangul_strokes, hotkey_spec, send_input_decision,
+};
 
 #[test]
 fn hotkey_specs_match_the_approved_combinations() {
@@ -29,4 +31,11 @@ fn hangul_sequence_contains_one_down_and_one_up_event() {
             },
         ]
     );
+}
+
+#[test]
+fn partial_send_input_count_requests_key_up_recovery() {
+    assert_eq!(send_input_decision(0), SendInputDecision::Failed);
+    assert_eq!(send_input_decision(1), SendInputDecision::RecoverKeyUp);
+    assert_eq!(send_input_decision(2), SendInputDecision::Complete);
 }
