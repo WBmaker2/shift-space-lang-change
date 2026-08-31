@@ -78,6 +78,25 @@
 ## 공개 선행 결정 적용 후 상태
 
 - 문서 반영: README, CHANGELOG, 공개 릴리스 노트에 설치 링크 및 HVC·SmartScreen·UIPI 제한을 기록했다.
-- 공개 전 선행 게이트: 민감정보·개인정보 점검, 기능 브랜치 최종 CI, `main` 병합 및 최종 CI, `v0.1.0` package/hash, GitHub Release 첨부와 PUBLIC 전환 확인이 남아 있다.
+- 공개 전 선행 게이트: 민감정보·개인정보 점검, 기능 브랜치 최종 CI, `main` 병합 및 최종 CI, `v0.1.0` package/hash, GitHub Release 첨부와 PUBLIC 전환 확인을 모두 완료했다. 상세 증거는 아래 최종 완료 섹션에 기록한다.
 - 공개 후 후속 검증: Windows 10/11 x64 한국어 Microsoft IME 실기기 HVC는 미완료이며 통과로 표시하지 않는다.
 - 알려진 제한: Authenticode 미서명으로 SmartScreen 경고 가능성이 있고, 관리자 권한 앱에는 UIPI 때문에 `SendInput`이 전달되지 않을 수 있다.
+
+## 최종 v0.1.0 공개 릴리스 및 공개 검증 완료
+
+다음 최종 공개 릴리스 게이트를 2026-09-01에 모두 완료했다.
+
+- PR [#1](https://github.com/WBmaker2/shift-space-lang-change/pull/1) 병합 완료. 병합 및 `v0.1.0` 태그 commit: `38133bbb52771418dcd68566e4ca93550da21cf0`
+- `main` 최종 CI [run 33444967595](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33444967595) 성공
+- `v0.1.0` tag CI [run 33445159584](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33445159584) 성공
+- Windows package [run 33445159572](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33445159572) 성공
+- package artifact: `shift-space-lang-change-windows-x64`, id `9777782027`, archive 196,697 bytes, 만료 예정 `2026-11-29T22:13:01Z`
+- 최종 `shift-space-lang-change.exe`: 158,720 bytes, SHA-256 `139960bfd1dd658df3fda616f089f5868ba7b1f0d6b98214ae2ecfe0957977e8`
+- 최종 `ShiftSpaceLangChange-Setup-0.1.0-x64.exe`: 124,937 bytes, SHA-256 `290fbf96855a5bfcef3d26bed2ec37d1c0f582d937f4306e64188b36b0c181f6`
+- GitHub [v0.1.0 release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.0) 공개 완료
+- 저장소가 PUBLIC이며 익명 접근으로 [저장소](https://github.com/WBmaker2/shift-space-lang-change)와 [릴리스](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.0) HTTP 200 확인
+- 공개 latest 설치기 재다운로드가 기록된 크기 124,937 bytes 및 SHA-256과 일치함을 확인
+
+## HVC 후속 미완료
+
+Windows 10/11 x64와 한국어 Microsoft IME가 설치된 실제 사용자 계정에서의 HVC는 아직 완료하지 않았다. 설치·IME 전환·메모장/브라우저/Office·트레이·자동 실행·충돌 롤백·제거·유휴 메모리 항목은 모두 `docs/HVC-WINDOWS.md`에서 `미검증`으로 유지한다. HVC에서 문제가 발견되면 후속 패치 릴리스로 수정한다.
