@@ -39,6 +39,23 @@
 - 별도 Luna 리뷰 결과: APPROVED. PowerShell 호출 연산자, 공백 포함 경로, 환경 전달, YAML 구조, 패키지 출력 회귀를 점검했다.
 - RC.2 package workflow의 실제 Windows runner 성공 여부를 다음 게이트로 확인한다.
 
+## RC.2 package 실패와 수정 계획
+
+- package run `33412786022`에서 Rust 테스트, clippy, release EXE, NSIS 경로 탐색은 통과했다.
+- `makensis.exe`는 정상 실행됐지만 `SetShellVarContext current`가 `Section`/`Function` 밖에 있어 NSIS 스크립트 3행에서 컴파일이 중단됐다.
+- 전역 `SetShellVarContext`를 제거하고 시작 메뉴 shell variable을 실제로 사용하는 설치·제거 `Section`의 첫 부분에 각각 배치한다.
+- 별도 구현·리뷰와 정적 구조 검증을 거친 뒤 기존 RC 태그를 보존하고 `v0.1.0-rc.3`으로 Windows package workflow를 재실행한다.
+- RC.3도 실패하면 세 번째 package 실패로 기록하고, 유사한 추가 시도 전 사용자와 진행 방향을 협의한다.
+
+## RC.2 package 수정 결과
+
+- NSIS 범위 수정 커밋: `4ce70b2`
+- 정적 검사 순서 보완 커밋: `b950e0b`
+- `SetShellVarContext current`를 Install/Uninstall Section 내부에서 시작 메뉴 변수 사용 전에 실행하도록 변경했다.
+- Windows package workflow에 `scripts/verify-nsis-scope.ps1`를 추가해 전역 사용, 누락, 잘못된 context, 시작 메뉴 변수보다 늦은 설정을 실패 처리한다.
+- 최초 독립 리뷰의 P2 순서 검사 finding을 보완했고 재검토 결과 APPROVED, 추가 finding 없음이다.
+- RC.3 package workflow의 Windows PowerShell 정적 검사와 실제 NSIS 컴파일 성공 여부를 다음 게이트로 확인한다.
+
 ## 아직 미완료
 
 - Windows package artifact 생성·다운로드·SHA-256 기록
