@@ -100,6 +100,6 @@ Rust 1.97.1 toolchain의 절대 경로와 toolchain `bin`을 PATH 앞에 두고 
 - `cargo clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings`: 통과
 - `git diff --check`: 통과
 - `wc -l src/hotkeys.rs`: 377줄 (500줄 제한 이내)
-- 라운드 3 커밋 SHA: 커밋 후 기록
+- 라운드 3 테스트·검증 커밋 SHA: `c468cb9004e8a98fadd53b90c75b33be0a10f0c6`
 
 이번 라운드도 macOS에서 수행했으므로 Windows runtime/HVC는 미검증입니다.
