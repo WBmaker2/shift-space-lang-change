@@ -4,27 +4,32 @@
 
 기록 규칙: 각 항목의 `결과`는 기본값을 `미검증`으로 둡니다. 실제로 확인한 뒤에만 `통과` 또는 `실패`로 바꾸고, 확인 환경과 증거 링크를 함께 남깁니다. 링크가 없으면 `없음`이라고 적습니다.
 
-## 최신 HVC 대상 — v0.1.2 패치 후보/릴리스
+## 최신 HVC 대상 — v0.1.2 공개 릴리스
 
-현재 최신 HVC 대상은 v0.1.2 패치 후보/릴리스입니다. 트레이 Shell 콜백을 앱 이벤트 큐로 전달하는 경로를 수정하고, 트레이 더블 클릭 복원·우클릭 메뉴의 `설정 열기`, 활성 단축키 요약, `프로그램 정보`, `종료`를 포함합니다. v0.1.2 자산은 아직 생성 전이므로 이 문서에는 추정 크기·해시·커밋·CI 실행값을 쓰지 않으며, 공개 후 실제 값을 아래 자리와 표에 기록합니다.
+현재 최신 HVC 대상은 공개된 v0.1.2 릴리스입니다. 트레이 Shell 콜백을 앱 이벤트 큐로 전달하는 경로를 수정하고, 트레이 더블 클릭 복원·우클릭 메뉴의 `설정 열기`, 활성 단축키 요약, `프로그램 정보`, `종료`를 포함합니다. 공개 릴리스와 자동 배포 증거는 아래에 기록했으며, Windows 10/11 실기기 HVC 표의 결과는 아직 모두 `미검증`입니다.
 
-### v0.1.2 자산 기록 자리 — 공개 후 작성
+### 공개 v0.1.2 자산 및 자동 배포 증거
 
-- Release: 공개 후 기입
-- tag commit: 공개 후 기입
-- Windows package workflow run: 공개 후 기입
-- artifact: 공개 후 기입
+- 병합 PR: [#6](https://github.com/WBmaker2/shift-space-lang-change/pull/6)
+- tag commit: `4b8a25ecca4e3b59e360a8c108c385bb488c29c9`
+- `main` merge commit: `793d23ee7dc2cdeb85d35531f234ab27d2f2435c`
+- tag CI [run 33485263833](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33485263833) 성공
+- Windows package [run 33485263823](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33485263823) 성공
+- artifact: `shift-space-lang-change-windows-x64` (id `9791557364`, archive 197,309 bytes)
+- [GitHub v0.1.2 release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.2) 공개 및 [latest 릴리스](https://github.com/WBmaker2/shift-space-lang-change/releases/latest) 확인
 - 설치기 파일명: `ShiftSpaceLangChange-Setup-0.1.2-x64.exe`
-- 설치기 공개 링크: 공개 후 기입
-- 설치기 크기: 공개 후 기입
-- 설치기 SHA-256: 공개 후 기입
-- 앱 본체 크기: 공개 후 기입
-- 앱 본체 SHA-256: 공개 후 기입
-- SHA256SUMS: 공개 후 기입
+- 설치기: [직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.2/ShiftSpaceLangChange-Setup-0.1.2-x64.exe), 125,247 bytes
+- 설치기 SHA-256: `fcfbbe5ae920f64900f013a6fd5f6bf278666b9d2a875405500e90206f567d53`
+- 앱 본체: `shift-space-lang-change.exe`, 159,232 bytes
+- 앱 본체 SHA-256: `596431ddba854c3efe76d449a53990eb8a959130380f8f9873320c52e8c06c38`
+- SHA256SUMS: [다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.2/SHA256SUMS.txt), 201 bytes
+- main CI [run 33485642014](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33485642014) 성공
+- GitHub Pages [run 33485642004](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33485642004) 성공, [공개 페이지](https://wbmaker2.github.io/shift-space-lang-change/) HTTP 200
+- latest 설치기 `releases/latest/download` HTTP 200 확인
 
 ### v0.1.2 실기기 HVC 체크리스트
 
-아직 Windows 10/11 실기기 HVC를 수행하지 않았습니다. 자동 테스트·Windows 대상 빌드 확인·패키지 검증은 실기기 HVC 통과 증거가 아닙니다.
+아직 Windows 10/11 실기기 HVC를 수행하지 않았습니다. 자동 테스트·Windows 대상 빌드 확인·패키지 검증·공개 페이지 확인은 실기기 HVC 통과 증거가 아닙니다.
 
 | 패치 재검증 항목 | 결과 | 확인 환경 | 확인일 | 증거 링크 |
 | --- | --- | --- | --- | --- |
@@ -42,7 +47,7 @@
 - 설치기는 Authenticode 코드 서명이 없어 SmartScreen 경고가 표시될 수 있으며, 경고 없음 여부도 아직 검증하지 않았습니다.
 - 관리자 권한 앱에는 Windows UIPI 정책에 따라 일반 권한 앱의 `SendInput`이 전달되지 않을 수 있습니다. 이 제한은 실기기 HVC에서 별도로 확인해야 합니다.
 
-v0.1.2 HVC 대상 버전 메모: `v0.1.2 — 트레이 콜백 라우팅·더블 클릭 복원·우클릭 프로그램 정보 추가`. 공개 릴리스와 실기기 HVC가 완료되기 전까지 모든 결과를 `미검증`으로 유지합니다.
+v0.1.2 HVC 대상 버전 메모: `v0.1.2 — 트레이 콜백 라우팅·더블 클릭 복원·우클릭 프로그램 정보 추가`. 공개 릴리스는 완료되었지만 실기기 HVC가 완료되기 전까지 모든 실기기 결과를 `미검증`으로 유지합니다.
 
 ## 공개 v0.1.1 HVC 기록 — 과거 대상 및 공개 증거 보존
 
