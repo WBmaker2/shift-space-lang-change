@@ -77,6 +77,8 @@ Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결�
 - [구현 계획](docs/superpowers/plans/2026-08-31-shift-space-lang-change.md)
 - [완료·배포 계획](docs/superpowers/plans/2026-08-31-release-completion.md)
 - [전역 단축키 오류 분류 수정 기록](docs/superpowers/reports/2026-09-01-hotkey-error-fix.md)
+- [트레이 상호작용 수정 계획](docs/superpowers/plans/2026-09-01-tray-interaction-fix.md)
+- [트레이 상호작용 수정 구현·검증 보고서](docs/superpowers/reports/2026-09-01-tray-interaction-fix.md)
 - [배포 진행 기록](docs/superpowers/reports/2026-09-01-release-progress.md)
 - [GitHub Pages 배포 계획](docs/plans/2026-09-01-github-pages-deploy.md)
 
