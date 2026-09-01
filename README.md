@@ -16,9 +16,9 @@ Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 
 
 공개 GitHub Release의 최신 설치기는 다음 링크에서 받을 수 있습니다.
 
-- [ShiftSpaceLangChange-Setup-0.1.0-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.0-x64.exe)
+- [ShiftSpaceLangChange-Setup-0.1.1-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.1-x64.exe)
 - [GitHub 최신 릴리스 페이지](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
-- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.0/SHA256SUMS.txt)
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.1/SHA256SUMS.txt)
 
 Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
 
@@ -63,13 +63,13 @@ cargo test --all-targets
 cargo clippy --all-targets -- -D warnings
 cargo build --release
 New-Item -ItemType Directory -Force dist
-makensis /DVERSION=0.1.0 installer\ShiftSpaceLangChange.nsi
-pwsh -File scripts\verify-package.ps1 -Version 0.1.0
+makensis /DVERSION=0.1.1 installer\ShiftSpaceLangChange.nsi
+pwsh -File scripts\verify-package.ps1 -Version 0.1.1
 ```
 
-GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징을 수행하고 `shift-space-lang-change-windows-x64` artifact로 실행 파일과 설치 파일을 제공합니다. 태그는 `v0.1.0`처럼 숫자 세 부분의 버전을 사용해야 합니다.
+GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징을 수행하고 `shift-space-lang-change-windows-x64` artifact로 실행 파일과 설치 파일을 제공합니다. 태그는 `v0.1.1`처럼 숫자 세 부분의 버전을 사용해야 합니다.
 
-Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. 공개 릴리스의 상세 범위와 자동 검증·미완료 항목은 [v0.1.0 릴리스 노트](.github/release-notes-v0.1.0.md)에서 확인할 수 있습니다.
+Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. 공개 릴리스의 상세 범위와 자동 검증·미완료 항목은 [v0.1.1 릴리스 노트](.github/release-notes-v0.1.1.md)에서 확인할 수 있습니다.
 
 ## 개발 문서
 

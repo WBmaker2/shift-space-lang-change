@@ -1,8 +1,8 @@
 use crate::config::AppSettings;
 use crate::launch::{WINDOW_CLASS, WM_APP_REQUEST_EXIT_ID};
 use crate::ui_model::{
-    IDC_CTRL_SPACE, IDC_HIDE, IDC_SHIFT_SPACE, IDC_STARTUP, UiEvent, map_command, map_tray_command,
-    tray_event_code,
+    IDC_CTRL_SPACE, IDC_HIDE, IDC_SHIFT_SPACE, IDC_STARTUP, UiEvent, map_command_notification,
+    map_queued_command, map_tray_command, tray_event_code,
 };
 
 use super::super::error::Win32Error;
@@ -13,16 +13,20 @@ use windows::Win32::Graphics::Gdi::{COLOR_WINDOW, HBRUSH};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY;
 use windows::Win32::UI::WindowsAndMessaging::{
-    BM_GETCHECK, BM_SETCHECK, BN_CLICKED, BS_AUTOCHECKBOX, BS_PUSHBUTTON, CS_HREDRAW, CS_VREDRAW,
+    BM_GETCHECK, BM_SETCHECK, BS_AUTOCHECKBOX, BS_PUSHBUTTON, CS_HREDRAW, CS_VREDRAW,
     CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DestroyWindow, IDC_ARROW, IDI_APPLICATION,
-    LoadCursorW, LoadIconW, MSG, RegisterClassExW, SW_HIDE, WINDOW_EX_STYLE, WINDOW_STYLE, WM_APP,
-    WM_CLOSE, WM_COMMAND, WM_KEYDOWN, WNDCLASSEXW, WS_CAPTION, WS_CHILD, WS_CLIPCHILDREN,
-    WS_EX_CONTROLPARENT, WS_MINIMIZEBOX, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
+    LoadCursorW, LoadIconW, MSG, PostMessageW, RegisterClassExW, SW_HIDE, WINDOW_EX_STYLE,
+    WINDOW_STYLE, WM_APP, WM_CLOSE, WM_COMMAND, WM_KEYDOWN, WNDCLASSEXW, WS_CAPTION, WS_CHILD,
+    WS_CLIPCHILDREN, WS_EX_CONTROLPARENT, WS_MINIMIZEBOX, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
 };
 use windows::core::{PCWSTR, w};
 
 /// Private message used by the tray icon. It intentionally does not overlap the exit request.
 pub const WM_APP_TRAY: u32 = WM_APP + 1;
+
+/// Private queued message carrying a button notification received synchronously by `window_proc`.
+/// `WM_APP + 2` is already reserved for the cross-process exit request.
+pub const WM_APP_UI_COMMAND: u32 = WM_APP + 3;
 
 /// Handles for the window and each control that the controller needs to render.
 #[derive(Clone, Copy, Debug)]
@@ -177,14 +181,11 @@ pub fn read_ui_event(message: &MSG) -> Option<UiEvent> {
     match message.message {
         WM_COMMAND => {
             let id = (message.wParam.0 & 0xffff) as i32;
-            let notification = ((message.wParam.0 >> 16) & 0xffff) as u32;
-            if notification != BN_CLICKED {
-                return None;
-            }
             let checked = matches!(id, IDC_SHIFT_SPACE | IDC_CTRL_SPACE | IDC_STARTUP)
                 && is_checked(HWND(message.lParam.0 as *mut _));
-            map_command(id, checked)
+            map_command_notification(message.wParam.0, checked)
         }
+        WM_APP_UI_COMMAND => map_queued_command(message.wParam.0),
         WM_CLOSE => Some(UiEvent::Hide),
         WM_KEYDOWN if message.wParam.0 == VIRTUAL_KEY(0x1b).0 as usize => Some(UiEvent::Hide),
         WM_APP_REQUEST_EXIT_ID => Some(UiEvent::Exit),
@@ -229,6 +230,26 @@ unsafe extern "system" fn window_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    if message == WM_COMMAND && map_command_notification(wparam.0, false).is_some() {
+        let id = (wparam.0 & 0xffff) as i32;
+        let checked = matches!(id, IDC_SHIFT_SPACE | IDC_CTRL_SPACE | IDC_STARTUP)
+            && is_checked(HWND(lparam.0 as *mut _));
+        let posted_wparam = (wparam.0 & 0xffff) | (usize::from(checked) << 16);
+        // WM_COMMAND is delivered synchronously to the parent and therefore never reaches the
+        // queue read by message_loop. Re-post a compact scalar payload so the existing typed
+        // event path can process it later, preserving checkbox state at click time.
+        // Safety: hwnd is the live callback window and both message parameters are scalar values;
+        // PostMessageW does not retain a Rust pointer.
+        let _ = unsafe {
+            PostMessageW(
+                Some(hwnd),
+                WM_APP_UI_COMMAND,
+                WPARAM(posted_wparam),
+                LPARAM(0),
+            )
+        };
+        return LRESULT(0);
+    }
     if message == WM_CLOSE {
         // Safety: hwnd is the callback's live window handle; hiding it preserves the tray app.
         unsafe {
