@@ -20,7 +20,7 @@ use crate::windows_mapping::hotkey_spec;
 
 use super::error::Win32Error;
 use super::timer::{TimerGuard, should_process_timer};
-use super::ui::window::WM_APP_TRAY;
+use super::ui::window::WM_APP_TRAY_QUEUE;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     DispatchMessageW, GetMessageW, IsDialogMessageW, MB_ICONERROR, MB_OK, MSG, MessageBoxW,
@@ -260,7 +260,7 @@ fn message_loop(
             continue;
         }
 
-        if message.message == WM_APP_TRAY {
+        if message.message == WM_APP_TRAY_QUEUE {
             match tray.read_event(message.wParam.0, message.lParam.0, controller.settings())? {
                 Some(event) if handle_ui_event(handles, tray, controller, event)? => {
                     return Ok(0);
@@ -328,6 +328,7 @@ fn handle_ui_event(
         },
         UiEvent::Hide => hide_window(handles.hwnd),
         UiEvent::Show => show_window(handles.hwnd),
+        UiEvent::About => show_about_message(handles.hwnd),
         UiEvent::Exit => return Ok(true),
     }
     Ok(false)
@@ -412,6 +413,24 @@ pub fn show_error_message(title: &str, body: &str) {
             PCWSTR(body.as_ptr()),
             PCWSTR(title.as_ptr()),
             MB_OK | MB_ICONERROR,
+        );
+    }
+}
+
+fn show_about_message(owner: HWND) {
+    let title = wide("프로그램 정보");
+    let body = wide(&format!(
+        "한/영 전환 도우미\n버전 {}",
+        env!("CARGO_PKG_VERSION")
+    ));
+    // Safety: owner is the app-owned settings window and both UTF-16 buffers remain alive for
+    // this synchronous call; MessageBoxW copies their text and retains no Rust pointer.
+    unsafe {
+        let _ = MessageBoxW(
+            Some(owner),
+            PCWSTR(body.as_ptr()),
+            PCWSTR(title.as_ptr()),
+            MB_OK | windows::Win32::UI::WindowsAndMessaging::MB_ICONINFORMATION,
         );
     }
 }

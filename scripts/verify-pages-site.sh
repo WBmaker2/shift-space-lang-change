@@ -3,7 +3,7 @@
 set -euo pipefail
 
 site_dir="${1:-site}"
-installer_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.1-x64.exe"
+installer_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.2-x64.exe"
 release_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest"
 
 required_files=(
@@ -28,7 +28,7 @@ required_copy=(
   'Ctrl + Space'
   'SmartScreen'
   '업데이트 내역'
-  '최신 v0.1.1의 실제 Windows 10/11 기기 HVC는 아직 미검증'
+  '최신 v0.1.2의 실제 Windows 10/11 기기 HVC는 아직 미검증'
 )
 
 for text in "${required_copy[@]}"; do

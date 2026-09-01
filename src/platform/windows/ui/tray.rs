@@ -1,17 +1,21 @@
 use crate::config::{AppSettings, Hotkey};
-use crate::ui_model::{IDM_EXIT, IDM_SHOW, UiEvent, map_tray_command, tray_event_code};
+use crate::ui_model::{
+    IDM_ABOUT, IDM_EXIT, IDM_SHOW, UiEvent, map_tray_callback_event, map_tray_command,
+    tray_event_code,
+};
 
 use super::super::error::Win32Error;
-use super::window::WM_APP_TRAY;
+use super::window::WM_APP_TRAY_CALLBACK;
 use windows::Win32::Foundation::{GetLastError, HWND, LPARAM, POINT, RECT, WPARAM};
 use windows::Win32::UI::Shell::{
     NIF_ICON, NIF_INFO, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIIF_INFO, NIM_ADD, NIM_DELETE,
-    NIM_MODIFY, NIM_SETVERSION, NOTIFYICON_VERSION_4, NOTIFYICONDATAW, Shell_NotifyIconW,
+    NIM_MODIFY, NIM_SETFOCUS, NIM_SETVERSION, NOTIFYICON_VERSION_4, NOTIFYICONDATAW,
+    Shell_NotifyIconW,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, DestroyMenu, GetCursorPos, IDI_APPLICATION, MF_DISABLED,
     MF_SEPARATOR, MF_STRING, PostMessageW, SetForegroundWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON,
-    TrackPopupMenu, WM_CONTEXTMENU, WM_LBUTTONDBLCLK, WM_NULL, WM_RBUTTONUP,
+    TrackPopupMenu, WM_CONTEXTMENU, WM_NULL, WM_RBUTTONUP,
 };
 use windows::core::{PCWSTR, w};
 
@@ -33,7 +37,7 @@ impl TrayIcon {
             hWnd: hwnd,
             uID: TRAY_ICON_ID,
             uFlags: NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_SHOWTIP,
-            uCallbackMessage: WM_APP_TRAY,
+            uCallbackMessage: WM_APP_TRAY_CALLBACK,
             hIcon: icon,
             ..Default::default()
         };
@@ -77,18 +81,18 @@ impl TrayIcon {
     /// Handle the shell callback; right click opens a menu and double click shows the window.
     pub fn read_event(
         &self,
-        wparam: usize,
+        _wparam: usize,
         lparam: isize,
         settings: AppSettings,
     ) -> Result<Option<UiEvent>, Win32Error> {
         let event = tray_event_code(lparam);
-        if event == WM_LBUTTONDBLCLK {
-            return Ok(Some(UiEvent::Show));
+        if let Some(event) = map_tray_callback_event(lparam) {
+            return Ok(Some(event));
         }
         if event == WM_RBUTTONUP || event == WM_CONTEXTMENU {
             return self.show_menu(settings);
         }
-        Ok(map_tray_command(wparam))
+        Ok(None)
     }
 
     fn show_menu(&self, settings: AppSettings) -> Result<Option<UiEvent>, Win32Error> {
@@ -107,6 +111,7 @@ impl TrayIcon {
                         PCWSTR(summary_wide.as_ptr()),
                     )
                 })
+                .and_then(|()| AppendMenuW(menu, MF_STRING, IDM_ABOUT, w!("프로그램 정보")))
                 .and_then(|()| AppendMenuW(menu, MF_SEPARATOR, 0, PCWSTR::null()))
         };
         if let Err(error) = result {
@@ -144,6 +149,7 @@ impl TrayIcon {
         // Windows recommends a benign message after TrackPopupMenu so the foreground window
         // transition is completed and the popup is dismissed reliably when focus changes.
         // Safety: the owner handle is app-owned and the message carries no borrowed data.
+        let _ = unsafe { Shell_NotifyIconW(NIM_SETFOCUS, &self.data) };
         let _ = unsafe { PostMessageW(Some(self.data.hWnd), WM_NULL, WPARAM(0), LPARAM(0)) };
         let _ = unsafe { DestroyMenu(menu) };
         if selected.0 == 0 {

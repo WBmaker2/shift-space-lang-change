@@ -7,6 +7,7 @@ pub enum UiEvent {
     SetStartup(bool),
     Hide,
     Show,
+    About,
     Exit,
 }
 
@@ -18,6 +19,7 @@ pub const IDC_STATUS: i32 = 1005;
 
 pub const IDM_SHOW: usize = 2001;
 pub const IDM_EXIT: usize = 2002;
+pub const IDM_ABOUT: usize = 2003;
 
 pub fn map_command(id: i32, checked: bool) -> Option<UiEvent> {
     match id {
@@ -55,9 +57,18 @@ pub fn map_queued_command(wparam: usize) -> Option<UiEvent> {
 pub fn map_tray_command(id: usize) -> Option<UiEvent> {
     match id {
         IDM_SHOW => Some(UiEvent::Show),
+        IDM_ABOUT => Some(UiEvent::About),
         IDM_EXIT => Some(UiEvent::Exit),
         _ => None,
     }
+}
+
+/// Convert a version-4 Shell callback payload into an app event.
+///
+/// The callback's `wParam` is not a menu command; menu commands are returned separately by
+/// `TrackPopupMenu`. Only a double-click callback is meaningful before a menu is shown.
+pub fn map_tray_callback_event(lparam: isize) -> Option<UiEvent> {
+    (tray_event_code(lparam) == 0x0203).then_some(UiEvent::Show)
 }
 
 /// Return the notification mouse event from the LOWORD of a version-4 tray callback lParam.

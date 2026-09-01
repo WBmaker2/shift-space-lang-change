@@ -2,7 +2,7 @@ use crate::config::AppSettings;
 use crate::launch::{WINDOW_CLASS, WM_APP_REQUEST_EXIT_ID};
 use crate::ui_model::{
     IDC_CTRL_SPACE, IDC_HIDE, IDC_SHIFT_SPACE, IDC_STARTUP, UiEvent, map_command_notification,
-    map_queued_command, map_tray_command, tray_event_code,
+    map_queued_command, map_tray_callback_event,
 };
 
 use super::super::error::Win32Error;
@@ -21,8 +21,15 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{PCWSTR, w};
 
-/// Private message used by the tray icon. It intentionally does not overlap the exit request.
-pub const WM_APP_TRAY: u32 = WM_APP + 1;
+/// Shell callback message registered in `NOTIFYICONDATAW.uCallbackMessage`.
+///
+/// The window procedure receives this message directly from Explorer, so it must be forwarded
+/// to the app queue before the normal queue-based event handling can see it.
+pub const WM_APP_TRAY_CALLBACK: u32 = WM_APP + 1;
+
+/// Private queue message carrying the scalar payload from a shell tray callback.
+/// `WM_APP + 2` is reserved for the cross-process exit request and `WM_APP + 3` for UI commands.
+pub const WM_APP_TRAY_QUEUE: u32 = WM_APP + 4;
 
 /// Private queued message carrying a button notification received synchronously by `window_proc`.
 /// `WM_APP + 2` is already reserved for the cross-process exit request.
@@ -189,15 +196,7 @@ pub fn read_ui_event(message: &MSG) -> Option<UiEvent> {
         WM_CLOSE => Some(UiEvent::Hide),
         WM_KEYDOWN if message.wParam.0 == VIRTUAL_KEY(0x1b).0 as usize => Some(UiEvent::Hide),
         WM_APP_REQUEST_EXIT_ID => Some(UiEvent::Exit),
-        WM_APP_TRAY => {
-            if tray_event_code(message.lParam.0)
-                == windows::Win32::UI::WindowsAndMessaging::WM_LBUTTONDBLCLK
-            {
-                Some(UiEvent::Show)
-            } else {
-                map_tray_command(message.wParam.0)
-            }
-        }
+        WM_APP_TRAY_QUEUE => map_tray_callback_event(message.lParam.0),
         _ => None,
     }
 }
@@ -230,6 +229,15 @@ unsafe extern "system" fn window_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    if message == WM_APP_TRAY_CALLBACK {
+        // Explorer delivers the registered Shell callback directly to this window procedure.
+        // Re-post only the scalar payload under a different private message so the app loop can
+        // consume it without recursively routing the callback back through this branch.
+        // Safety: hwnd is the live callback window and both message parameters are scalar values;
+        // PostMessageW does not retain a Rust pointer.
+        let _ = unsafe { PostMessageW(Some(hwnd), WM_APP_TRAY_QUEUE, wparam, lparam) };
+        return LRESULT(0);
+    }
     if message == WM_COMMAND && map_command_notification(wparam.0, false).is_some() {
         let id = (wparam.0 & 0xffff) as i32;
         let checked = matches!(id, IDC_SHIFT_SPACE | IDC_CTRL_SPACE | IDC_STARTUP)
@@ -385,4 +393,42 @@ fn wide(value: &str) -> Vec<u16> {
 
 fn win_error(error: windows::core::Error) -> Win32Error {
     Win32Error::new(error.code().0 as u32)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{WM_APP_TRAY_CALLBACK, WM_APP_TRAY_QUEUE, WM_APP_UI_COMMAND, read_ui_event};
+    use crate::launch::WM_APP_REQUEST_EXIT_ID;
+    use crate::ui_model::UiEvent;
+    use windows::Win32::Foundation::{LPARAM, WPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{MSG, WM_LBUTTONDBLCLK};
+
+    #[test]
+    fn tray_callback_and_queue_messages_are_distinct_and_reserved() {
+        assert_ne!(WM_APP_TRAY_CALLBACK, WM_APP_TRAY_QUEUE);
+        assert_ne!(WM_APP_TRAY_QUEUE, WM_APP_REQUEST_EXIT_ID);
+        assert_ne!(WM_APP_TRAY_QUEUE, WM_APP_UI_COMMAND);
+    }
+
+    #[test]
+    fn shell_callback_is_not_consumed_as_an_app_event() {
+        let message = MSG {
+            message: WM_APP_TRAY_CALLBACK,
+            wParam: WPARAM(1),
+            lParam: LPARAM(WM_LBUTTONDBLCLK as isize),
+            ..Default::default()
+        };
+        assert_eq!(read_ui_event(&message), None);
+    }
+
+    #[test]
+    fn queued_tray_callback_is_converted_to_show_event() {
+        let message = MSG {
+            message: WM_APP_TRAY_QUEUE,
+            wParam: WPARAM(1),
+            lParam: LPARAM(WM_LBUTTONDBLCLK as isize),
+            ..Default::default()
+        };
+        assert_eq!(read_ui_event(&message), Some(UiEvent::Show));
+    }
 }
