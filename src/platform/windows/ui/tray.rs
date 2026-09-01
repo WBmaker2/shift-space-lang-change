@@ -3,15 +3,15 @@ use crate::ui_model::{IDM_EXIT, IDM_SHOW, UiEvent, map_tray_command, tray_event_
 
 use super::super::error::Win32Error;
 use super::window::WM_APP_TRAY;
-use windows::Win32::Foundation::{GetLastError, HWND, POINT, RECT};
+use windows::Win32::Foundation::{GetLastError, HWND, LPARAM, POINT, RECT, WPARAM};
 use windows::Win32::UI::Shell::{
     NIF_ICON, NIF_INFO, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIIF_INFO, NIM_ADD, NIM_DELETE,
     NIM_MODIFY, NIM_SETVERSION, NOTIFYICON_VERSION_4, NOTIFYICONDATAW, Shell_NotifyIconW,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, DestroyMenu, GetCursorPos, IDI_APPLICATION, MF_DISABLED,
-    MF_SEPARATOR, MF_STRING, SetForegroundWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON, TrackPopupMenu,
-    WM_CONTEXTMENU, WM_LBUTTONDBLCLK, WM_RBUTTONUP,
+    MF_SEPARATOR, MF_STRING, PostMessageW, SetForegroundWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON,
+    TrackPopupMenu, WM_CONTEXTMENU, WM_LBUTTONDBLCLK, WM_NULL, WM_RBUTTONUP,
 };
 use windows::core::{PCWSTR, w};
 
@@ -141,6 +141,10 @@ impl TrayIcon {
                 Some(std::ptr::null::<RECT>()),
             )
         };
+        // Windows recommends a benign message after TrackPopupMenu so the foreground window
+        // transition is completed and the popup is dismissed reliably when focus changes.
+        // Safety: the owner handle is app-owned and the message carries no borrowed data.
+        let _ = unsafe { PostMessageW(Some(self.data.hWnd), WM_NULL, WPARAM(0), LPARAM(0)) };
         let _ = unsafe { DestroyMenu(menu) };
         if selected.0 == 0 {
             Ok(None)
@@ -208,7 +212,23 @@ fn last_error() -> Win32Error {
 
 #[cfg(test)]
 mod tests {
-    use super::write_utf16_truncated;
+    use crate::config::AppSettings;
+
+    use super::{active_summary, write_utf16_truncated};
+
+    #[test]
+    fn active_summary_lists_both_enabled_hotkeys() {
+        assert_eq!(
+            active_summary(AppSettings::default()),
+            "활성 단축키: Shift + Space, Ctrl + Space"
+        );
+    }
+
+    #[test]
+    fn active_summary_lists_the_remaining_hotkey() {
+        let settings = AppSettings::new(false, true).expect("one hotkey remains enabled");
+        assert_eq!(active_summary(settings), "활성 단축키: Ctrl + Space");
+    }
 
     #[test]
     fn notification_payload_is_nul_terminated_and_truncated() {
