@@ -2,7 +2,7 @@
 
 ## 범위
 
-승인된 `2026-09-01-tray-interaction-fix` 계획에 따라 설정 창 버튼 이벤트 전달과 트레이 상호작용을 보강했습니다. Git commit, push, release 및 Windows 실기기 HVC는 수행하지 않았습니다.
+승인된 `2026-09-01-tray-interaction-fix` 계획에 따라 설정 창 버튼 이벤트 전달과 트레이 상호작용을 보강했습니다. 이 보고서 작성 당시 구현 단계에서는 Git commit, push, release 및 Windows 실기기 HVC를 수행하지 않았습니다. 이후 변경은 PR #4로 병합되어 v0.1.1 공개 릴리스에 포함되었으며, 최종 공개 증거는 아래에 별도로 기록합니다.
 
 ## 원인
 
@@ -38,3 +38,21 @@ Windows 10/11 x64에서 패치 빌드 또는 승인된 패치 릴리스 자산�
 - 체크박스 즉시 반영, 마지막 활성 단축키 보호, 창 닫기·ESC 숨김, 단일 인스턴스 및 기존 단축키가 회귀하지 않는지
 
 VoiceOver, 음성 출력, 녹음 및 재생 검증은 범위에서 제외합니다.
+
+## 최종 공개 릴리스 증거
+
+구현·검증 보고서 작성 이후 다음 공개 릴리스 상태를 확인했습니다.
+
+- PR [#4](https://github.com/WBmaker2/shift-space-lang-change/pull/4) 병합 완료
+- `main` 및 `v0.1.1` tag commit: `3771661647cc693c6cfe9198e5ab3d4bccccbb47`
+- `main` CI [run 33472643491](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472643491) 성공
+- GitHub Pages [run 33472643488](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472643488) 성공
+- `v0.1.1` tag CI [run 33472797525](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472797525) 성공
+- Windows package [run 33472797570](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472797570) 성공
+- [GitHub v0.1.1 release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.1) 공개 및 latest 확인
+- 설치기 [직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.1/ShiftSpaceLangChange-Setup-0.1.1-x64.exe): 125,062 bytes, SHA-256 `43f7c26eff70dee505314bd8d0d61a78751cddab3e76b763fbe4efabb3c02407`
+- 앱 본체: 159,232 bytes, SHA-256 `bb85f70cabdf147dcd4a96f379a331d05fb4930341e90018a7d2da6f04ec004e`
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.1/SHA256SUMS.txt) 공개 확인
+- [GitHub Pages 공개 주소](https://wbmaker2.github.io/shift-space-lang-change/) HTTP 200 및 v0.1.1 링크·본문 확인
+
+Windows 10/11 실기기 설치·IME 전환·트레이·자동 실행·제거 HVC는 여전히 미검증이며, 위 자동화·공개 릴리스 증거를 실기기 통과로 간주하지 않습니다.

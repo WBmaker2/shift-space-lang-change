@@ -8,7 +8,23 @@
 
 이 기록지의 최신 HVC 대상은 v0.1.1 패치 릴리스입니다. v0.1.0 사용자 보고에서 `트레이로 숨기기` 버튼을 눌러도 설정 창이 숨겨지지 않는 문제가 확인되었고, v0.1.1에서 수정했습니다. 숨긴 뒤 트레이 아이콘을 더블 클릭해 설정 창을 복원하고, 우클릭 메뉴의 설정 열기·활성 단축키 요약·종료를 사용하는 흐름도 함께 재검증 대상입니다.
 
-진단 결과, 버튼의 `WM_COMMAND`가 부모 창 프로시저로 동기 전달되지만 앱이 큐에서 읽는 메시지만 해석해 해당 이벤트가 소실되는 것이 원인이었습니다. 패치는 부모 프로시저가 인식된 버튼 명령을 앱 전용 큐 메시지로 전달하고, 체크박스 상태는 클릭 시점에 보존하도록 수정합니다. v0.1.1 설치기와 실제 Windows 실기기 HVC는 아직 검증하지 않았으므로 이 문서의 아래 표는 계속 `미검증`으로 유지합니다.
+진단 결과, 버튼의 `WM_COMMAND`가 부모 창 프로시저로 동기 전달되지만 앱이 큐에서 읽는 메시지만 해석해 해당 이벤트가 소실되는 것이 원인이었습니다. 패치는 부모 프로시저가 인식된 버튼 명령을 앱 전용 큐 메시지로 전달하고, 체크박스 상태는 클릭 시점에 보존하도록 수정합니다. v0.1.1 설치기의 공개 URL·파일 크기·SHA-256과 자동 배포 결과는 아래에 기록했지만, 실제 Windows 실기기 HVC는 아직 검증하지 않았으므로 이 문서의 아래 표는 계속 `미검증`으로 유지합니다.
+
+### 공개 v0.1.1 자산 및 자동 배포 증거
+
+- 병합 PR: [#4](https://github.com/WBmaker2/shift-space-lang-change/pull/4)
+- `main` 및 `v0.1.1` tag commit: `3771661647cc693c6cfe9198e5ab3d4bccccbb47`
+- `main` CI [run 33472643491](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472643491) 성공
+- GitHub Pages [run 33472643488](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472643488) 성공
+- `v0.1.1` tag CI [run 33472797525](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472797525) 성공
+- Windows package [run 33472797570](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33472797570) 성공
+- [GitHub v0.1.1 release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.1) 공개 및 latest 릴리스 확인
+- 설치기: [ShiftSpaceLangChange-Setup-0.1.1-x64.exe](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.1/ShiftSpaceLangChange-Setup-0.1.1-x64.exe), 125,062 bytes
+- 설치기 SHA-256: `43f7c26eff70dee505314bd8d0d61a78751cddab3e76b763fbe4efabb3c02407`
+- 앱 본체: 159,232 bytes
+- 앱 본체 SHA-256: `bb85f70cabdf147dcd4a96f379a331d05fb4930341e90018a7d2da6f04ec004e`
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.1/SHA256SUMS.txt) 공개 확인
+- [GitHub Pages](https://wbmaker2.github.io/shift-space-lang-change/) HTTP 200 및 v0.1.1 링크·본문 확인
 
 | 패치 재검증 항목 | 결과 | 확인 환경 | 확인일 | 증거 링크 |
 | --- | --- | --- | --- | --- |
@@ -20,7 +36,7 @@
 | 체크박스 변경 즉시 반영 및 마지막 활성 단축키 보호 | 미검증 | — | — | 없음 |
 | 창 닫기·ESC 숨김, 단일 인스턴스, 단축키 기능 회귀 없음 | 미검증 | — | — | 없음 |
 
-HVC 대상 버전 메모: `v0.1.1 — 설정 창 숨김 및 트레이 복원/메뉴 상호작용 수정`. Windows 실기기 HVC는 아직 미검증이며, 설치기 공개·실기기 확인 후에만 표의 결과를 갱신합니다.
+HVC 대상 버전 메모: `v0.1.1 — 설정 창 숨김 및 트레이 복원/메뉴 상호작용 수정`. 설치기 공개와 자동 배포 검증은 완료했지만 Windows 실기기 HVC는 아직 미검증이며, 실기기 확인 후에만 표의 결과를 갱신합니다.
 
 ## 과거 자동화 기준선 (RC.3; 최종 HVC 대상 아님)
 
