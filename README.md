@@ -14,13 +14,13 @@ Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 
 
 ## 설치와 사용
 
-공개 GitHub Release의 최신 설치기는 다음 링크에서 받을 수 있습니다.
+v0.1.2 공개 후 최신 설치기는 다음 링크에서 받을 수 있습니다.
 
-- [ShiftSpaceLangChange-Setup-0.1.1-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.1-x64.exe)
+- [ShiftSpaceLangChange-Setup-0.1.2-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.2-x64.exe)
 - [GitHub 최신 릴리스 페이지](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
-- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.1/SHA256SUMS.txt)
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.2/SHA256SUMS.txt)
 
-Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
+v0.1.2 공개 후 Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
 
 설정 창에서 다음 항목을 각각 체크할 수 있습니다.
 
@@ -29,11 +29,11 @@ Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe
 
 두 항목 중 하나 이상은 항상 켜져 있어야 합니다. 체크박스 변경은 저장 버튼 없이 즉시 적용됩니다. 충돌이나 저장 오류가 발생하면 이전의 유효한 설정으로 되돌리고 상태 문구와 트레이 알림으로 안내합니다.
 
-창의 닫기 버튼은 프로그램을 끝내지 않고 트레이로 숨깁니다. 트레이 아이콘을 두 번 클릭하면 설정을 다시 열 수 있고, 트레이 메뉴의 `종료`를 선택해야 완전히 종료됩니다. `Windows 시작 시 자동 실행` 체크를 해제하면 다음 로그인부터 자동 실행되지 않습니다.
+창의 닫기 버튼은 프로그램을 끝내지 않고 트레이로 숨깁니다. 트레이 아이콘을 두 번 클릭하면 기존 설정 창을 복원할 수 있습니다. 트레이 아이콘을 우클릭하면 `설정 열기`, 활성 단축키 요약, `프로그램 정보`, `종료`를 사용할 수 있으며, `프로그램 정보`에는 프로그램명과 현재 버전이 표시됩니다. `Windows 시작 시 자동 실행` 체크를 해제하면 다음 로그인부터 자동 실행되지 않습니다.
 
 ## 제거와 SmartScreen
 
-2026-09-01 공개 선행 릴리스 결정에 따라 Windows 실기기 HVC는 공개 후 후속 검증으로 남아 있습니다. CI의 자동 테스트·패키지 검증은 완료되었지만, 실제 Windows 10/11에서의 설치·입력 전환·트레이·자동 실행·제거 동작을 아직 통과로 주장하지 않습니다. 문제가 발견되면 후속 패치 릴리스에서 수정합니다.
+v0.1.2 공개 준비 단계에서는 Windows 실기기 HVC를 아직 수행하지 않았습니다. 자동 테스트·정적 검사·패키지 검증 결과가 있더라도 실제 Windows 10/11에서의 설치·입력 전환·트레이·자동 실행·제거 동작을 통과로 주장하지 않습니다. 공개 후 실기기 HVC에서 문제가 발견되면 후속 패치 릴리스에서 수정합니다.
 
 시작 메뉴의 제거 프로그램을 실행하면 먼저 실행 중인 앱에 종료를 요청하고 실행 파일 잠금이 풀릴 때까지 짧게 재시도한 뒤 다음 항목을 정리합니다. 수 초 안에 종료되지 않으면 설치·제거를 중단하여 부분 변경을 피합니다.
 
@@ -63,13 +63,13 @@ cargo test --all-targets
 cargo clippy --all-targets -- -D warnings
 cargo build --release
 New-Item -ItemType Directory -Force dist
-makensis /DVERSION=0.1.1 installer\ShiftSpaceLangChange.nsi
-pwsh -File scripts\verify-package.ps1 -Version 0.1.1
+makensis /DVERSION=0.1.2 installer\ShiftSpaceLangChange.nsi
+pwsh -File scripts\verify-package.ps1 -Version 0.1.2
 ```
 
-GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징을 수행하고 `shift-space-lang-change-windows-x64` artifact로 실행 파일과 설치 파일을 제공합니다. 태그는 `v0.1.1`처럼 숫자 세 부분의 버전을 사용해야 합니다.
+GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징을 수행하고 `shift-space-lang-change-windows-x64` artifact로 실행 파일과 설치 파일을 제공합니다. 태그는 `v0.1.2`처럼 숫자 세 부분의 버전을 사용해야 합니다.
 
-Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. 공개 릴리스의 상세 범위와 자동 검증·미완료 항목은 [v0.1.1 릴리스 노트](.github/release-notes-v0.1.1.md)에서 확인할 수 있습니다.
+Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. v0.1.2 공개 준비 범위와 자동 검증·미완료 항목은 [v0.1.2 릴리스 노트](.github/release-notes-v0.1.2.md)에서 확인할 수 있습니다.
 
 ## 개발 문서
 
@@ -79,6 +79,9 @@ Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결�
 - [전역 단축키 오류 분류 수정 기록](docs/superpowers/reports/2026-09-01-hotkey-error-fix.md)
 - [트레이 상호작용 수정 계획](docs/superpowers/plans/2026-09-01-tray-interaction-fix.md)
 - [트레이 상호작용 수정 구현·검증 보고서](docs/superpowers/reports/2026-09-01-tray-interaction-fix.md)
+- [트레이 콜백 라우팅 수정 계획](docs/superpowers/plans/2026-09-01-tray-callback-routing-fix.md)
+- [트레이 콜백 라우팅 수정 구현·검증 보고서](docs/superpowers/reports/2026-09-01-tray-callback-routing-fix.md)
+- [v0.1.2 릴리스 노트](.github/release-notes-v0.1.2.md)
 - [배포 진행 기록](docs/superpowers/reports/2026-09-01-release-progress.md)
 - [GitHub Pages 배포 계획](docs/plans/2026-09-01-github-pages-deploy.md)
 
