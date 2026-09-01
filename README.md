@@ -14,13 +14,13 @@ Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 
 
 ## 설치와 사용
 
-v0.1.2 공개 후 최신 설치기는 다음 링크에서 받을 수 있습니다.
+공개된 v0.1.2 최신 설치기는 다음 링크에서 받을 수 있습니다.
 
 - [ShiftSpaceLangChange-Setup-0.1.2-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.2-x64.exe)
 - [GitHub 최신 릴리스 페이지](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
 - [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.2/SHA256SUMS.txt)
 
-v0.1.2 공개 후 Windows package workflow가 만든 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
+Windows package workflow가 만들고 GitHub Release에 공개한 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
 
 설정 창에서 다음 항목을 각각 체크할 수 있습니다.
 
@@ -33,7 +33,7 @@ v0.1.2 공개 후 Windows package workflow가 만든 `ShiftSpaceLangChange-Setup
 
 ## 제거와 SmartScreen
 
-v0.1.2 공개 준비 단계에서는 Windows 실기기 HVC를 아직 수행하지 않았습니다. 자동 테스트·정적 검사·패키지 검증 결과가 있더라도 실제 Windows 10/11에서의 설치·입력 전환·트레이·자동 실행·제거 동작을 통과로 주장하지 않습니다. 공개 후 실기기 HVC에서 문제가 발견되면 후속 패치 릴리스에서 수정합니다.
+v0.1.2는 공개되었지만 Windows 실기기 HVC는 아직 수행하지 않았습니다. 자동 테스트·정적 검사·패키지 검증 결과가 있더라도 실제 Windows 10/11에서의 설치·입력 전환·트레이·자동 실행·제거 동작을 통과로 주장하지 않습니다. 실기기 HVC에서 문제가 발견되면 후속 패치 릴리스에서 수정합니다.
 
 시작 메뉴의 제거 프로그램을 실행하면 먼저 실행 중인 앱에 종료를 요청하고 실행 파일 잠금이 풀릴 때까지 짧게 재시도한 뒤 다음 항목을 정리합니다. 수 초 안에 종료되지 않으면 설치·제거를 중단하여 부분 변경을 피합니다.
 
@@ -69,7 +69,7 @@ pwsh -File scripts\verify-package.ps1 -Version 0.1.2
 
 GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징을 수행하고 `shift-space-lang-change-windows-x64` artifact로 실행 파일과 설치 파일을 제공합니다. 태그는 `v0.1.2`처럼 숫자 세 부분의 버전을 사용해야 합니다.
 
-Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. v0.1.2 공개 준비 범위와 자동 검증·미완료 항목은 [v0.1.2 릴리스 노트](.github/release-notes-v0.1.2.md)에서 확인할 수 있습니다.
+Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. v0.1.2 공개 범위와 자동 검증·미완료 항목은 [v0.1.2 릴리스 노트](.github/release-notes-v0.1.2.md)에서 확인할 수 있습니다.
 
 ## 개발 문서
 
