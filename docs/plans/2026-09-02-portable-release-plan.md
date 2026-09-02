@@ -2,7 +2,7 @@
 
 - 작성일: 2026-09-02
 - 계획 기준: `origin/main` (`986eb69`, v0.1.2 포함)
-- 상태: 사용자 승인 완료, 로컬 구현·리뷰 완료 — 커밋·푸시·릴리스·배포 대기
+- 상태: 사용자 승인 완료, v0.1.4 공개 릴리스·Pages 배포 완료 — Windows 실기기 HVC 미검증
 
 ## 1. 목표
 
@@ -196,4 +196,4 @@ VoiceOver 구현·검증은 범위에서 제외한다. 음성, 녹음, TTS 기�
 - 브라우저에서 375px·1440px 레이아웃의 가로 overflow 없음, 키보드 포커스 outline, 콘솔 오류 0건을 확인했습니다.
 - macOS에서는 PowerShell 포터블 ZIP 생성·Windows runner 패키지 실행과 Windows 10/11 x64 실기기 HVC를 검증하지 못했습니다. 해당 항목은 미검증으로 유지합니다.
 - 계획의 예상 변경 파일 외에 앱 버전 표시 정합성을 위해 `Cargo.toml`, `Cargo.lock`, NSIS 기본 버전 메타데이터를 0.1.4로 갱신했습니다(plan drift). v0.1.3은 패키지 검증 실패 기록으로 보존합니다.
-- v0.1.3 태그는 실패 증거 보존을 위해 유지하며, v0.1.4 커밋·태그·GitHub Release·Pages 배포는 검증 완료 후 기록합니다.
+- v0.1.3 태그는 실패 증거 보존을 위해 유지합니다. v0.1.4는 PR [#10](https://github.com/WBmaker2/shift-space-lang-change/pull/10), merge SHA `84e9232de7346fced47647c568e1f896764c3f65`, annotated tag, [GitHub Release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.4), [Windows package run 33638803323](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803323), [Pages run 33638754916](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638754916)까지 공개·검증 완료했습니다.

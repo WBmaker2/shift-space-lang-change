@@ -22,7 +22,7 @@ Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 
 
 ### 설치형 사용
 
-공개 예정인 v0.1.4 설치기는 다음 링크에서 받을 수 있습니다.
+공개된 v0.1.4 설치기는 다음 링크에서 받을 수 있습니다.
 
 - [ShiftSpaceLangChange-Setup-0.1.4-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.4-x64.exe)
 - [GitHub 최신 릴리스 페이지](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)

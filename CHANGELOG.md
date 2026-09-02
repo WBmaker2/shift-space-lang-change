@@ -14,7 +14,9 @@
 
 ### Verification status
 
-- Windows runner에서 포터블 ZIP 구조·원본 바이너리 동일성·SHA-256 manifest를 검증합니다.
+- [v0.1.4 tag CI run 33638803179](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803179)와 [Windows package run 33638803323](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803323)가 성공했습니다.
+- [Pages 배포 run 33638754916](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638754916)과 [공개 홍보 페이지](https://wbmaker2.github.io/shift-space-lang-change/)를 확인했습니다.
+- 공개 Release 자산은 원본 EXE 159,232 bytes/`45b8f4daff1b21c5651707ef0d89b985baf654b842f0ececc8a81b812a12fa56`, 설치기 125,233 bytes/`8bdf8dcf7392b5d72a5aa0e395b577e9c7096c06db05339116550f69ea993780`, 포터블 ZIP 87,439 bytes/`2a297c539aa9468547d5115f1a9cae6855a38954ebb936ed08d38e4cfbf85a12`, `SHA256SUMS.txt` 314 bytes/`36d45d6f2f23d0330415a00fab152140ea0f7d1c104818fc65f4157ded4bdcd6`입니다.
 - Windows 10/11 x64 실기기 HVC는 아직 미검증입니다.
 
 ## v0.1.3 — 2026-09-02 (미공개)
