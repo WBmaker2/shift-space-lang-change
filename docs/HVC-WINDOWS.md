@@ -4,9 +4,25 @@
 
 기록 규칙: 각 항목의 `결과`는 기본값을 `미검증`으로 둡니다. 실제로 확인한 뒤에만 `통과` 또는 `실패`로 바꾸고, 확인 환경과 증거 링크를 함께 남깁니다. 링크가 없으면 `없음`이라고 적습니다.
 
-## 다음 HVC 대상 — v0.1.4 설치형·포터블형
+## 최신 HVC 대상 — 공개 v0.1.4 설치형·포터블형
 
-v0.1.4 구현 후보는 기존 설치형과 `ShiftSpaceLangChange-Portable-0.1.4-x64.zip` 포터블형을 함께 제공합니다. 아래 항목은 Windows 10/11 x64 실기기에서 확인하기 전까지 모두 `미검증`으로 유지합니다. Windows runner의 ZIP 구조·해시 검증은 이 표의 실기기 통과를 대신하지 않습니다.
+v0.1.4는 기존 설치형과 `ShiftSpaceLangChange-Portable-0.1.4-x64.zip` 포터블형을 공개 제공합니다. 아래 항목은 Windows 10/11 x64 실기기에서 확인하기 전까지 모두 `미검증`으로 유지합니다. Windows runner의 ZIP 구조·해시 검증은 이 표의 실기기 통과를 대신하지 않습니다.
+
+### v0.1.4 공개 자산 및 자동 검증 증거
+
+- 병합 PR: [#10](https://github.com/WBmaker2/shift-space-lang-change/pull/10)
+- main merge commit 및 annotated tag 대상: `84e9232de7346fced47647c568e1f896764c3f65` / `v0.1.4`
+- tag CI [run 33638803179](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803179) 성공
+- Windows package [run 33638803323](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803323) 성공
+- artifact `shift-space-lang-change-windows-x64` (id `9849985527`, archive 285,229 bytes)
+- [GitHub v0.1.4 Release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.4) 및 [latest](https://github.com/WBmaker2/shift-space-lang-change/releases/latest) 공개
+- 설치기: [직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.4/ShiftSpaceLangChange-Setup-0.1.4-x64.exe), 125,233 bytes, SHA-256 `8bdf8dcf7392b5d72a5aa0e395b577e9c7096c06db05339116550f69ea993780`
+- 포터블 ZIP: [직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.4/ShiftSpaceLangChange-Portable-0.1.4-x64.zip), 87,439 bytes, SHA-256 `2a297c539aa9468547d5115f1a9cae6855a38954ebb936ed08d38e4cfbf85a12`
+- 원본 EXE: [직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.4/shift-space-lang-change.exe), 159,232 bytes, SHA-256 `45b8f4daff1b21c5651707ef0d89b985baf654b842f0ececc8a81b812a12fa56`
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.4/SHA256SUMS.txt), 314 bytes, SHA-256 `36d45d6f2f23d0330415a00fab152140ea0f7d1c104818fc65f4157ded4bdcd6`
+- [Pages 배포 run 33638754916](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638754916) 성공, [공개 페이지](https://wbmaker2.github.io/shift-space-lang-change/) HTTP 200
+
+위 자동화·정적·브라우저 검증은 Windows 실기기 HVC 통과를 뜻하지 않습니다.
 
 포터블 ZIP은 먼저 압축을 풀고 `ShiftSpaceLangChange.exe`를 실행합니다. 설치 폴더, 시작 메뉴 바로가기, 제거 프로그램은 만들지 않지만 설정은 `HKCU\Software\ShiftSpaceLangChange`에 저장됩니다. 자동 실행을 켜면 현재 EXE 경로가 HKCU Run 키에 등록되므로, 폴더를 옮긴 뒤에는 자동 실행을 다시 설정해야 합니다.
 
@@ -26,7 +42,7 @@ v0.1.4 구현 후보는 기존 설치형과 `ShiftSpaceLangChange-Portable-0.1.4
 
 포터블 HVC는 설치형 HVC와 별도로 기록합니다. macOS에서의 PowerShell 실행 불가나 cross-target 빌드 성공은 위 항목을 `통과`로 바꾸는 근거가 아닙니다.
 
-## 최신 HVC 대상 — v0.1.2 공개 릴리스
+## 이전 HVC 대상 — v0.1.2 공개 릴리스
 
 현재 최신 HVC 대상은 공개된 v0.1.2 릴리스입니다. 트레이 Shell 콜백을 앱 이벤트 큐로 전달하는 경로를 수정하고, 트레이 더블 클릭 복원·우클릭 메뉴의 `설정 열기`, 활성 단축키 요약, `프로그램 정보`, `종료`를 포함합니다. 공개 릴리스와 자동 배포 증거는 아래에 기록했으며, Windows 10/11 실기기 HVC 표의 결과는 아직 모두 `미검증`입니다.
 

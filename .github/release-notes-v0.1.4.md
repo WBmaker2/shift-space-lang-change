@@ -42,7 +42,7 @@
 - [원본 EXE 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.4/shift-space-lang-change.exe)
 - [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.4/SHA256SUMS.txt)
 
-공개 후 실제 Actions run URL, artifact 크기, 각 자산의 SHA-256을 이 문서에 기록하고 `SHA256SUMS.txt`와 대조합니다.
+검증 기준 커밋은 `84e9232de7346fced47647c568e1f896764c3f65`이며, `v0.1.4` annotated tag가 해당 main merge commit에 연결되어 있습니다. [태그 CI run 33638803179](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803179), [Windows package run 33638803323](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803323), [Pages 배포 run 33638754916](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638754916)이 성공했습니다. [artifact 9849985527](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803323/artifacts/9849985527)는 285,229바이트이며, 원본 EXE 159,232바이트/`45b8f4daff1b21c5651707ef0d89b985baf654b842f0ececc8a81b812a12fa56`, 설치기 125,233바이트/`8bdf8dcf7392b5d72a5aa0e395b577e9c7096c06db05339116550f69ea993780`, 포터블 ZIP 87,439바이트/`2a297c539aa9468547d5115f1a9cae6855a38954ebb936ed08d38e4cfbf85a12`, `SHA256SUMS.txt` 314바이트/`36d45d6f2f23d0330415a00fab152140ea0f7d1c104818fc65f4157ded4bdcd6`입니다. `SHA256SUMS.txt`와 모두 대조했고, latest 포터블을 재다운로드해 ZIP 해시가 일치함을 확인했습니다.
 
 ## Known limitations
 
