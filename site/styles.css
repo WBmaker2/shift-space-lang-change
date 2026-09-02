@@ -83,7 +83,7 @@ button, a, summary { -webkit-tap-highlight-color: transparent; }
 .install-card::after { position: absolute; right: -2.2rem; top: -3rem; width: 8rem; height: 8rem; border: 1.5rem solid #eff6ff; border-radius: 999px; content: ""; }
 .install-card h3 { margin: 5rem 0 0; font-size: 1.5rem; letter-spacing: -.03em; }
 .download-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.download-choice { display: flex; min-height: 31rem; flex-direction: column; border: 1px solid var(--line); border-radius: 1.7rem; background: white; padding: 2rem; box-shadow: 0 14px 40px rgb(30 64 175 / 5%); }
+.download-choice { display: flex; min-width: 0; min-height: 31rem; flex-direction: column; border: 1px solid var(--line); border-radius: 1.7rem; background: white; padding: 2rem; box-shadow: 0 14px 40px rgb(30 64 175 / 5%); }
 .download-choice.recommended { border-color: #93c5fd; box-shadow: 0 20px 55px rgb(23 105 232 / 13%); }
 .download-choice.portable { border-color: #b8d5f8; background: #f4f9ff; }
 .choice-topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -95,7 +95,7 @@ button, a, summary { -webkit-tap-highlight-color: transparent; }
 .download-choice ul { display: grid; gap: .55rem; margin: 1.35rem 0 1.5rem; padding: 0; list-style: none; color: #475569; line-height: 1.55; }
 .download-choice ul li { padding-left: 1.25rem; position: relative; }
 .download-choice ul li::before { position: absolute; left: 0; top: .55rem; width: .42rem; height: .42rem; border-radius: 999px; background: var(--blue); content: ""; }
-.download-choice .button { width: 100%; margin-top: auto; }
+.download-choice .button { width: 100%; min-width: 0; margin-top: auto; overflow-wrap: anywhere; white-space: normal; }
 .portable-steps { display: grid; gap: .65rem; margin: 1.2rem 0 .8rem; padding: 0; list-style: none; }
 .portable-steps li { display: grid; grid-template-columns: 6.2rem 1fr; gap: .8rem; border-radius: .9rem; background: rgb(255 255 255 / 76%); padding: .75rem .85rem; }
 .portable-steps strong { color: #0f3f82; font-size: .88rem; }
@@ -173,7 +173,7 @@ button, a, summary { -webkit-tap-highlight-color: transparent; }
   .hero h1 { letter-spacing: -.065em; }
   .cta-row, .download-panel { flex-direction: column; align-items: stretch; }
   .button { width: 100%; }
-  .feature-grid, .install-grid, .support-grid, .download-choice-grid { grid-template-columns: 1fr; }
+  .feature-grid, .install-grid, .support-grid, .download-choice-grid { grid-template-columns: minmax(0, 1fr); }
   .download-choice { min-height: 0; }
   .usage-list article { grid-template-columns: 2.5rem 1fr; align-items: start; }
   .usage-list article p { grid-column: 2; }

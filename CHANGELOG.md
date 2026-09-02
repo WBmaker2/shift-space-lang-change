@@ -19,6 +19,12 @@
 - 공개 Release 자산은 원본 EXE 159,232 bytes/`45b8f4daff1b21c5651707ef0d89b985baf654b842f0ececc8a81b812a12fa56`, 설치기 125,233 bytes/`8bdf8dcf7392b5d72a5aa0e395b577e9c7096c06db05339116550f69ea993780`, 포터블 ZIP 87,439 bytes/`2a297c539aa9468547d5115f1a9cae6855a38954ebb936ed08d38e4cfbf85a12`, `SHA256SUMS.txt` 314 bytes/`36d45d6f2f23d0330415a00fab152140ea0f7d1c104818fc65f4157ded4bdcd6`입니다.
 - Windows 10/11 x64 실기기 HVC는 아직 미검증입니다.
 
+## v0.1.4 Pages — 2026-09-02
+
+### Fixed
+
+- 모바일 다운로드 카드가 320~375px 폭에서 가로로 넘치지 않도록 grid track과 카드·다운로드 버튼의 최소 너비 및 줄바꿈 규칙을 보강했습니다. 앱 바이너리와 릴리스 자산 버전은 변경하지 않았습니다.
+
 ## v0.1.3 — 2026-09-02 (미공개)
 
 ### Added
