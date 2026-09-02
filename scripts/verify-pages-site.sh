@@ -3,8 +3,8 @@
 set -euo pipefail
 
 site_dir="${1:-site}"
-installer_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.3-x64.exe"
-portable_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Portable-0.1.3-x64.zip"
+installer_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.4-x64.exe"
+portable_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Portable-0.1.4-x64.zip"
 release_url="https://github.com/WBmaker2/shift-space-lang-change/releases/latest"
 
 required_files=(
@@ -34,9 +34,9 @@ required_copy=(
   'README-PORTABLE.txt'
   'HKCU'
   'SmartScreen'
-  'v0.1.3'
+  'v0.1.4'
   '업데이트 내역'
-  'v0.1.3의 실제 Windows 10/11 기기 HVC는 아직 미검증'
+  'v0.1.4의 실제 Windows 10/11 기기 HVC는 아직 미검증'
 )
 
 for text in "${required_copy[@]}"; do
@@ -71,8 +71,8 @@ if ! grep -Fq 'gi-pulse' "$site_dir/index.html" || ! grep -Fq 'prefers-reduced-m
   exit 1
 fi
 
-if grep -Fq '0.1.2' "$site_dir/index.html"; then
-  echo "The public page still contains stale v0.1.2 copy." >&2
+if grep -Fq '0.1.3' "$site_dir/index.html"; then
+  echo "The public page still contains stale v0.1.3 copy." >&2
   exit 1
 fi
 

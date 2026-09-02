@@ -1,24 +1,33 @@
 # 변경 기록
 
-## v0.1.3 — 2026-09-02
+## v0.1.4 — 2026-09-02
+
+### Fixed
+
+- 포터블 ZIP의 압축 엔트리와 원본 EXE를 비교할 때 Deflate 스트림의 partial read를 안전하게 처리하도록 SHA-256 전체 스트림 비교로 수정했습니다.
 
 ### Added
 
-- 설치기 없이 압축을 풀어 실행할 수 있는 `ShiftSpaceLangChange-Portable-0.1.3-x64.zip` 배포 채널을 추가했습니다.
-- 포터블 ZIP 내부를 `ShiftSpaceLangChange.exe`와 `README-PORTABLE.txt`로 고정하고, 원본 release EXE와의 SHA-256 동일성을 Windows workflow에서 검증합니다.
-- 홍보 페이지에서 설치형(추천)과 포터블형(무설치)을 비교해 선택할 수 있는 다운로드 카드를 추가했습니다.
+- 설치기 없이 압축을 풀어 실행할 수 있는 `ShiftSpaceLangChange-Portable-0.1.4-x64.zip` 배포 채널을 제공합니다.
+- 설치형(추천)과 포터블형(무설치)을 비교하는 다운로드 선택 UI와 `prefers-reduced-motion` 대응을 제공합니다.
 - Windows package artifact에 설치기, 포터블 ZIP, 원본 EXE와 `SHA256SUMS.txt`를 함께 제공합니다.
-
-### Changed
-
-- 포터블은 설치 폴더·시작 메뉴·제거 프로그램을 만들지 않지만, 설정은 `HKCU`에 저장되고 선택적 자동 실행은 `HKCU Run` 키를 사용한다는 범위를 안내합니다.
-- 포터블 폴더를 먼저 압축 해제하고 실행해야 하며, 이동 후 자동 실행을 다시 설정하고 삭제 전 앱을 종료해야 한다는 절차를 문서화했습니다.
-- 다운로드 강조 애니메이션에 `prefers-reduced-motion` 대응을 추가했습니다.
 
 ### Verification status
 
-- macOS에서는 PowerShell `Compress-Archive`와 Windows 실기기 동작을 완전히 검증할 수 없습니다. Windows runner가 패키지 생성·ZIP 구조·바이너리 동일성·SHA-256을 검증합니다.
-- Windows 10/11 x64 실기기 HVC는 아직 미검증입니다. 포터블 실행, 한국어 IME 전환, 트레이, 자동 실행 경로, 폴더 삭제는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 별도로 기록합니다.
+- Windows runner에서 포터블 ZIP 구조·원본 바이너리 동일성·SHA-256 manifest를 검증합니다.
+- Windows 10/11 x64 실기기 HVC는 아직 미검증입니다.
+
+## v0.1.3 — 2026-09-02 (미공개)
+
+### Added
+
+- v0.1.3 포터블 배포를 준비했으나 Windows package의 압축 엔트리 바이트 검증에서 실패해 공개 자산을 발행하지 않았습니다.
+
+### Verification status
+
+- `Windows package` run `33637305886`의 `Verify package outputs` 단계에서 실패했습니다.
+- 실패 원인은 Deflate 스트림 partial read를 동일 청크 경계로 비교한 false negative였습니다. 수정은 v0.1.4에 반영했습니다.
+- v0.1.3 태그는 실패 기록 보존을 위해 유지하며 GitHub Release와 공개 자산은 없습니다.
 
 ## v0.1.2 — 2026-09-01
 

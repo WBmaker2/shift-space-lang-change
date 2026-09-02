@@ -41,7 +41,7 @@ ShiftSpaceLangChange-Portable-<version>-x64/
 └── README-PORTABLE.txt
 ```
 
-공개 파일명은 `ShiftSpaceLangChange-Portable-<version>-x64.zip`으로 한다. 첫 구현 릴리스 후보는 현재 v0.1.2 다음 패치인 `v0.1.3`으로 잡되, 구현 시작 시 최신 태그와 버전을 다시 확인한다.
+공개 파일명은 `ShiftSpaceLangChange-Portable-<version>-x64.zip`으로 한다. v0.1.3 후보의 패키지 검증 실패를 보존하고, 수정된 첫 공개 릴리스 후보는 `v0.1.4`로 잡는다.
 
 ## 4. 구현 범위
 
@@ -116,7 +116,7 @@ ShiftSpaceLangChange-Portable-<version>-x64/
 
 - `README.md`: 설치형과 포터블형 사용법, 차이, 삭제 방법, 직접 다운로드 링크를 구분한다.
 - `CHANGELOG.md`: 포터블 배포 채널과 홍보페이지 선택 UI를 기록한다.
-- `.github/release-notes-v0.1.3.md`: 자동 검증, 알려진 제한, 실기기 HVC 상태, 설치형/포터블형 해시를 기록한다.
+- `.github/release-notes-v0.1.4.md`: 자동 검증, 알려진 제한, 실기기 HVC 상태, 설치형/포터블형 해시를 기록한다.
 - `docs/HVC-WINDOWS.md`: 설치형과 별도로 포터블 실행·이동·자동 실행·삭제 확인 항목을 추가한다.
 - 공개 후 보고에는 GitHub Release, 설치형 직접 다운로드, 포터블 직접 다운로드, GitHub Pages 홍보페이지 링크를 모두 클릭 가능하게 제공한다.
 
@@ -132,7 +132,7 @@ ShiftSpaceLangChange-Portable-<version>-x64/
 | `scripts/verify-pages-site.sh` | 포터블 링크·문구·접근성 계약 검증 |
 | `README.md` | 두 배포 방식과 포터블 삭제/자동 실행 안내 |
 | `CHANGELOG.md` | 사용자에게 보이는 변경 기록 |
-| `.github/release-notes-v0.1.3.md` | 새 릴리스 검증·제한·해시 기록 |
+| `.github/release-notes-v0.1.4.md` | 새 릴리스 검증·제한·해시 기록 |
 | `docs/HVC-WINDOWS.md` | 포터블 실기기 HVC 체크리스트 |
 
 기존 앱 동작이 그대로 재사용되므로 특별한 결함이 발견되지 않는 한 `src/**`는 변경하지 않는다. 모든 코드 파일은 500줄 미만 규칙을 유지한다.
@@ -191,9 +191,9 @@ VoiceOver 구현·검증은 범위에서 제외한다. 음성, 녹음, TTS 기�
 
 ## 구현·검증 기록
 
-- 2026-09-02 사용자 승인 후 `codex/portable-release` worktree에서 포터블 ZIP 생성·검증, Windows workflow, 설치형/포터블형 다운로드 UI, reduced-motion, Pages 정적 검증, README·CHANGELOG·v0.1.3 릴리스 노트·Windows HVC 문서를 구현했습니다.
+- 2026-09-02 사용자 승인 후 `codex/v0.1.4-release` worktree에서 포터블 ZIP 생성·검증, Windows workflow, 설치형/포터블형 다운로드 UI, reduced-motion, Pages 정적 검증, README·CHANGELOG·v0.1.4 릴리스 노트·Windows HVC 문서를 구현했습니다.
 - `cargo fmt --all -- --check`, `cargo test --all-targets`, `cargo clippy --all-targets -- -D warnings`, Windows 대상 `cargo check`·clippy, `bash scripts/verify-pages-site.sh`를 통과했습니다.
 - 브라우저에서 375px·1440px 레이아웃의 가로 overflow 없음, 키보드 포커스 outline, 콘솔 오류 0건을 확인했습니다.
 - macOS에서는 PowerShell 포터블 ZIP 생성·Windows runner 패키지 실행과 Windows 10/11 x64 실기기 HVC를 검증하지 못했습니다. 해당 항목은 미검증으로 유지합니다.
-- 계획의 예상 변경 파일 외에 앱 버전 표시 정합성을 위해 `Cargo.toml`, `Cargo.lock`, NSIS 기본 버전 메타데이터를 0.1.3으로 갱신했습니다(plan drift).
-- 커밋·푸시·태그·GitHub Release·Pages 배포는 실행하지 않았으며 사용자 최종 승인 대기 상태입니다.
+- 계획의 예상 변경 파일 외에 앱 버전 표시 정합성을 위해 `Cargo.toml`, `Cargo.lock`, NSIS 기본 버전 메타데이터를 0.1.4로 갱신했습니다(plan drift). v0.1.3은 패키지 검증 실패 기록으로 보존합니다.
+- v0.1.3 태그는 실패 증거 보존을 위해 유지하며, v0.1.4 커밋·태그·GitHub Release·Pages 배포는 검증 완료 후 기록합니다.
