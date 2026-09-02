@@ -204,3 +204,8 @@ VoiceOver 구현·검증은 범위에서 제외한다. 음성, 녹음, TTS 기�
 - 관찰된 원인: 375px viewport에서 `documentElement.clientWidth`가 360px인데 `scrollWidth`가 369px이었고, `.download-choice.recommended` 및 `.download-choice.portable`이 grid parent 폭(320px)을 넘어섰습니다. 모바일 grid의 `1fr` track과 카드의 기본 `min-width: auto`가 포터블 안내 목록의 긴 min-content 문구를 줄이지 못해 가로 overflow를 만들었습니다. 앞선 CSS cache-bust 이후에도 이 콘텐츠 기반 intrinsic minimum이 남아 있음을 독립 CUA로 확인했습니다.
 - 최소 수정 범위: `.download-choice`와 내부 다운로드 버튼의 최소 너비를 0으로 허용하고, 모바일 grid track을 `minmax(0, 1fr)`로 고정하며, 긴 버튼/배지 문구가 안전하게 줄바꿈되도록 필요한 CSS만 보완합니다. 업데이트 내역과 CHANGELOG에는 Pages 후속 수정으로 기록합니다.
 - 수용 기준: 공개 Pages에서 캐시가 제거된 상태로 320px·375px·1440px 각각 `scrollWidth <= clientWidth`(가로 overflow 없음), 설치형·포터블 버튼 표시, hero 이미지 로드, 콘솔 오류 0건을 확인합니다. 앱 버전과 Release 자산은 0.1.4 그대로 유지합니다.
+
+### 2026-09-03 후속 관찰 — CSS cache key 갱신
+
+- PR #14의 CSS 규칙은 main에 반영되었지만 공개 CUA에서 기존 `styles.css?v=0.1.4-mobile-fix`가 재사용되어 320px에서 `scrollWidth 336 > clientWidth 305`가 남았습니다. HTML의 새 업데이트 문구와 콘솔 0건은 정상이라, 이번 원인은 레이아웃 규칙이 아닌 Pages/브라우저 캐시 키 충돌로 판단합니다.
+- 승인된 최소 조치는 `site/index.html` stylesheet query를 `v=0.1.4-mobile-fix-320`으로 갱신하는 것입니다. 이후 PR/CI/Pages 배포 완료 후 새 CSS URL과 320px·375px·1440px overflow false를 공개 CUA에서 재확인합니다. v0.1.4 바이너리·Release 자산은 변경하지 않습니다.
