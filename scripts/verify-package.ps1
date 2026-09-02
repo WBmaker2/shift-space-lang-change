@@ -34,29 +34,27 @@ function Test-EntryMatchesFile {
     )
 
     $entryStream = $Entry.Open()
-    $fileStream = [System.IO.File]::OpenRead($Path)
-    $entryBuffer = New-Object byte[] 65536
-    $fileBuffer = New-Object byte[] 65536
+    $entryMemory = New-Object System.IO.MemoryStream
     try {
-        while ($true) {
-            $entryRead = $entryStream.Read($entryBuffer, 0, $entryBuffer.Length)
-            $fileRead = $fileStream.Read($fileBuffer, 0, $fileBuffer.Length)
-            if ($entryRead -ne $fileRead) {
+        # Deflate streams are allowed to return partial reads, so copy the
+        # entry before comparing rather than assuming one Read has equal
+        # boundaries in both streams.
+        $entryStream.CopyTo($entryMemory)
+        $entryBytes = $entryMemory.ToArray()
+        $fileBytes = [System.IO.File]::ReadAllBytes($Path)
+        if ($entryBytes.Length -ne $fileBytes.Length) {
+            return $false
+        }
+        for ($index = 0; $index -lt $entryBytes.Length; $index++) {
+            if ($entryBytes[$index] -ne $fileBytes[$index]) {
                 return $false
             }
-            if ($entryRead -eq 0) {
-                return $true
-            }
-            for ($index = 0; $index -lt $entryRead; $index++) {
-                if ($entryBuffer[$index] -ne $fileBuffer[$index]) {
-                    return $false
-                }
-            }
         }
+        return $true
     }
     finally {
         $entryStream.Dispose()
-        $fileStream.Dispose()
+        $entryMemory.Dispose()
     }
 }
 
