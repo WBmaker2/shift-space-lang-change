@@ -197,3 +197,10 @@ VoiceOver 구현·검증은 범위에서 제외한다. 음성, 녹음, TTS 기�
 - macOS에서는 PowerShell 포터블 ZIP 생성·Windows runner 패키지 실행과 Windows 10/11 x64 실기기 HVC를 검증하지 못했습니다. 해당 항목은 미검증으로 유지합니다.
 - 계획의 예상 변경 파일 외에 앱 버전 표시 정합성을 위해 `Cargo.toml`, `Cargo.lock`, NSIS 기본 버전 메타데이터를 0.1.4로 갱신했습니다(plan drift). v0.1.3은 패키지 검증 실패 기록으로 보존합니다.
 - v0.1.3 태그는 실패 증거 보존을 위해 유지합니다. v0.1.4는 PR [#10](https://github.com/WBmaker2/shift-space-lang-change/pull/10), merge SHA `84e9232de7346fced47647c568e1f896764c3f65`, annotated tag, [GitHub Release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.4), [Windows package run 33638803323](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638803323), [Pages run 33638754916](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33638754916)까지 공개·검증 완료했습니다.
+
+## 2026-09-03 후속 승인 addendum — 320px 모바일 다운로드 카드
+
+- 사용자 승인: 공개 CUA에서 320px 보완 수정을 진행합니다. 기존 v0.1.4 바이너리·GitHub Release·Windows 패키지는 변경하지 않고 Pages CSS/문서만 수정합니다.
+- 관찰된 원인: 375px viewport에서 `documentElement.clientWidth`가 360px인데 `scrollWidth`가 369px이었고, `.download-choice.recommended` 및 `.download-choice.portable`이 grid parent 폭(320px)을 넘어섰습니다. 모바일 grid의 `1fr` track과 카드의 기본 `min-width: auto`가 포터블 안내 목록의 긴 min-content 문구를 줄이지 못해 가로 overflow를 만들었습니다. 앞선 CSS cache-bust 이후에도 이 콘텐츠 기반 intrinsic minimum이 남아 있음을 독립 CUA로 확인했습니다.
+- 최소 수정 범위: `.download-choice`와 내부 다운로드 버튼의 최소 너비를 0으로 허용하고, 모바일 grid track을 `minmax(0, 1fr)`로 고정하며, 긴 버튼/배지 문구가 안전하게 줄바꿈되도록 필요한 CSS만 보완합니다. 업데이트 내역과 CHANGELOG에는 Pages 후속 수정으로 기록합니다.
+- 수용 기준: 공개 Pages에서 캐시가 제거된 상태로 320px·375px·1440px 각각 `scrollWidth <= clientWidth`(가로 overflow 없음), 설치형·포터블 버튼 표시, hero 이미지 로드, 콘솔 오류 0건을 확인합니다. 앱 버전과 Release 자산은 0.1.4 그대로 유지합니다.
