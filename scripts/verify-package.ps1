@@ -34,29 +34,17 @@ function Test-EntryMatchesFile {
     )
 
     $entryStream = $Entry.Open()
-    $fileStream = [System.IO.File]::OpenRead($Path)
-    $entryBuffer = New-Object byte[] 65536
-    $fileBuffer = New-Object byte[] 65536
+    $sha = [System.Security.Cryptography.SHA256]::Create()
     try {
-        while ($true) {
-            $entryRead = $entryStream.Read($entryBuffer, 0, $entryBuffer.Length)
-            $fileRead = $fileStream.Read($fileBuffer, 0, $fileBuffer.Length)
-            if ($entryRead -ne $fileRead) {
-                return $false
-            }
-            if ($entryRead -eq 0) {
-                return $true
-            }
-            for ($index = 0; $index -lt $entryRead; $index++) {
-                if ($entryBuffer[$index] -ne $fileBuffer[$index]) {
-                    return $false
-                }
-            }
-        }
+        # ComputeHash consumes the complete stream and is safe when a
+        # DeflateStream returns partial reads.
+        $entryHash = [BitConverter]::ToString($sha.ComputeHash($entryStream)).Replace('-', '').ToLowerInvariant()
+        $fileHash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+        return $entryHash -eq $fileHash
     }
     finally {
         $entryStream.Dispose()
-        $fileStream.Dispose()
+        $sha.Dispose()
     }
 }
 

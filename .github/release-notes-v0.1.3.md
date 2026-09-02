@@ -1,10 +1,10 @@
-# 한/영 전환 도우미 v0.1.3
+# 한/영 전환 도우미 v0.1.3 (미공개 실패 기록)
 
-2026-09-02 포터블 배포 채널을 추가한 패치 릴리스입니다. 기존 설치형은 계속 유지하며, GitHub Release와 [공개 홍보 페이지](https://wbmaker2.github.io/shift-space-lang-change/)에서 두 방식을 선택할 수 있습니다.
+2026-09-02 포터블 배포를 준비했으나 Windows package 검증 실패로 GitHub Release를 공개하지 않았습니다. 기존 설치형은 v0.1.2를 유지하며, 수정된 포터블 배포는 v0.1.4에서 제공합니다.
 
 ## Added
 
-- `ShiftSpaceLangChange-Portable-0.1.3-x64.zip`을 추가했습니다.
+- `ShiftSpaceLangChange-Portable-0.1.3-x64.zip` 생성을 시도했습니다.
 - 포터블 ZIP에는 다음 두 파일만 들어 있습니다.
 
   ```text
@@ -13,8 +13,8 @@
   └── README-PORTABLE.txt
   ```
 
-- Windows package workflow가 설치기·포터블 ZIP·원본 EXE·`SHA256SUMS.txt`를 생성하고, 포터블 EXE가 원본 release EXE와 같은지 확인합니다.
-- 설치형(추천)과 포터블형(무설치)의 차이, 압축 해제 순서, SmartScreen 안내를 홍보 페이지와 README에 추가했습니다.
+- Windows package workflow는 파일을 생성했지만 `Verify package outputs`의 EXE 비교가 실패했습니다.
+- 설치형·포터블형 UI와 안내는 v0.1.4에서 수정된 검증 로직과 함께 공개합니다.
 
 ## Portable scope
 
@@ -29,15 +29,13 @@
 - `scripts/verify-pages-site.sh`가 설치형·포터블형 직접 다운로드 URL, 무설치 안내, `README-PORTABLE.txt`, SmartScreen, reduced-motion 계약을 확인합니다.
 - Windows 10/11 x64 실기기 HVC는 아직 미검증입니다. 자동 CI·정적 검증·패키지 검증은 실제 IME·트레이·자동 실행·삭제 동작의 통과 증거가 아닙니다.
 
-## Release assets and hashes
+## 공개 자산 없음
 
-공개 전 Windows package workflow가 아래 파일의 실제 SHA-256을 생성합니다. 이 문서에 해시를 복사할 때는 workflow artifact의 `SHA256SUMS.txt`와 반드시 대조합니다.
+v0.1.3은 검증 실패로 공개 자산과 GitHub Release가 없습니다.
 
-- [v0.1.3 GitHub Release](https://github.com/WBmaker2/shift-space-lang-change/releases/tag/v0.1.3)
-- [설치형 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.3-x64.exe)
-- [포터블 ZIP 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Portable-0.1.3-x64.zip)
-- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.3/SHA256SUMS.txt)
-- GitHub Actions Windows package: 공개 후 실제 run 링크와 artifact ID를 기록합니다.
+- Windows package 실패 run: [33637305886](https://github.com/WBmaker2/shift-space-lang-change/actions/runs/33637305886)
+- 실패 단계: `Verify package outputs`
+- 후속 수정 릴리스: v0.1.4
 
 ## Known limitations
 

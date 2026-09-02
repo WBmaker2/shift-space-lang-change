@@ -2,7 +2,7 @@ Unicode true
 RequestExecutionLevel user
 
 !ifndef VERSION
-  !define VERSION "0.1.3"
+  !define VERSION "0.1.4"
 !endif
 
 Name "한/영 전환 도우미"
