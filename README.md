@@ -12,15 +12,29 @@ Windows에서 `Shift + Space`와 `Ctrl + Space`를 전역 한/영 전환 키로 
 
 한국어 Microsoft IME가 없으면 앱은 실행되지만 한/영 전환 결과를 확인할 수 없습니다. 관리자 권한으로 실행 중인 프로그램은 Windows UIPI 정책 때문에 일반 권한 앱의 `SendInput`을 받지 못할 수 있습니다. 이 앱은 권한 상승을 자동 요청하지 않습니다.
 
-## 설치와 사용
+## 배포 방식 선택
 
-공개된 v0.1.2 최신 설치기는 다음 링크에서 받을 수 있습니다.
+설치형은 일반 사용자에게 권장하며 시작 메뉴·제거 프로그램·자동 실행을 한 번에 관리합니다. 포터블형은 설치기 없이 원하는 폴더에서 실행할 때 선택하세요. 두 배포본은 동일한 Windows x64 실행 파일을 사용합니다.
 
-- [ShiftSpaceLangChange-Setup-0.1.2-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.2-x64.exe)
+- [v0.1.3 설치형 EXE 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.3-x64.exe)
+- [v0.1.3 포터블 ZIP 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Portable-0.1.3-x64.zip)
+- [GitHub 최신 릴리스와 SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
+
+### 설치형 사용
+
+공개된 v0.1.3 설치기는 다음 링크에서 받을 수 있습니다.
+
+- [ShiftSpaceLangChange-Setup-0.1.3-x64.exe 직접 다운로드](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Setup-0.1.3-x64.exe)
 - [GitHub 최신 릴리스 페이지](https://github.com/WBmaker2/shift-space-lang-change/releases/latest)
-- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.2/SHA256SUMS.txt)
+- [SHA256SUMS.txt](https://github.com/WBmaker2/shift-space-lang-change/releases/download/v0.1.3/SHA256SUMS.txt)
 
 Windows package workflow가 만들고 GitHub Release에 공개한 `ShiftSpaceLangChange-Setup-<version>-x64.exe`를 실행하면 `%LOCALAPPDATA%\Programs\ShiftSpaceLangChange`에 사용자 단위로 설치됩니다. 설치 과정에서 관리자 권한을 요구하지 않으며 시작 메뉴에 `한영 전환 도우미` 바로가기를 만들고 로그인 시 자동 실행을 켭니다.
+
+### 포터블형 사용
+
+포터블 ZIP은 설치 폴더·시작 메뉴 바로가기·제거 프로그램을 만들지 않습니다. [포터블 ZIP](https://github.com/WBmaker2/shift-space-lang-change/releases/latest/download/ShiftSpaceLangChange-Portable-0.1.3-x64.zip)을 원하는 위치에 내려받은 뒤 **먼저 압축을 풀고** `ShiftSpaceLangChange.exe`를 실행하세요. ZIP 내부에서 직접 실행하면 업데이트·경로 관리가 불편할 수 있습니다. 압축 파일에는 루트 폴더 하나와 `ShiftSpaceLangChange.exe`, `README-PORTABLE.txt`만 들어 있습니다.
+
+포터블도 완전히 무흔적인 모드는 아닙니다. 단축키 설정은 `HKCU\Software\ShiftSpaceLangChange`에 저장되고, `Windows 시작 시 자동 실행`을 켜면 현재 EXE 경로가 HKCU Run 키에 등록됩니다. 포터블 폴더를 옮긴 뒤 자동 실행을 계속 사용하려면 새 위치에서 다시 켜세요.
 
 설정 창에서 다음 항목을 각각 체크할 수 있습니다.
 
@@ -33,9 +47,9 @@ Windows package workflow가 만들고 GitHub Release에 공개한 `ShiftSpaceLan
 
 ## 제거와 SmartScreen
 
-v0.1.2는 공개되었지만 Windows 실기기 HVC는 아직 수행하지 않았습니다. 자동 테스트·정적 검사·패키지 검증 결과가 있더라도 실제 Windows 10/11에서의 설치·입력 전환·트레이·자동 실행·제거 동작을 통과로 주장하지 않습니다. 실기기 HVC에서 문제가 발견되면 후속 패치 릴리스에서 수정합니다.
+v0.1.3은 포터블 ZIP과 설치형을 함께 제공하지만 Windows 실기기 HVC는 아직 수행하지 않았습니다. 자동 테스트·정적 검사·패키지 검증 결과가 있더라도 실제 Windows 10/11에서의 설치·입력 전환·트레이·자동 실행·제거 동작을 통과로 주장하지 않습니다. 실기기 HVC에서 문제가 발견되면 후속 패치 릴리스에서 수정합니다.
 
-시작 메뉴의 제거 프로그램을 실행하면 먼저 실행 중인 앱에 종료를 요청하고 실행 파일 잠금이 풀릴 때까지 짧게 재시도한 뒤 다음 항목을 정리합니다. 수 초 안에 종료되지 않으면 설치·제거를 중단하여 부분 변경을 피합니다.
+설치형은 시작 메뉴의 제거 프로그램을 실행하면 먼저 실행 중인 앱에 종료를 요청하고 실행 파일 잠금이 풀릴 때까지 짧게 재시도한 뒤 다음 항목을 정리합니다. 수 초 안에 종료되지 않으면 설치·제거를 중단하여 부분 변경을 피합니다. 포터블형은 자동 실행을 끄고 트레이 메뉴에서 앱을 종료한 뒤 압축을 푼 폴더를 직접 삭제하세요. 폴더 삭제만으로 HKCU 설정이 제거되지는 않습니다.
 
 - 설치 폴더와 실행 파일
 - 시작 메뉴 바로가기
@@ -63,13 +77,14 @@ cargo test --all-targets
 cargo clippy --all-targets -- -D warnings
 cargo build --release
 New-Item -ItemType Directory -Force dist
-makensis /DVERSION=0.1.2 installer\ShiftSpaceLangChange.nsi
-pwsh -File scripts\verify-package.ps1 -Version 0.1.2
+makensis /DVERSION=0.1.3 installer\ShiftSpaceLangChange.nsi
+pwsh -File scripts\build-portable.ps1 -Version 0.1.3
+pwsh -File scripts\verify-package.ps1 -Version 0.1.3
 ```
 
-GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징을 수행하고 `shift-space-lang-change-windows-x64` artifact로 실행 파일과 설치 파일을 제공합니다. 태그는 `v0.1.2`처럼 숫자 세 부분의 버전을 사용해야 합니다.
+GitHub Actions의 `Windows package` workflow는 `windows-2025`에서 테스트·릴리스 빌드·NSIS 패키징·포터블 ZIP 생성·SHA-256 manifest 작성을 수행하고 `shift-space-lang-change-windows-x64` artifact로 원본 실행 파일, 설치기, 포터블 ZIP, `SHA256SUMS.txt`를 제공합니다. 태그는 `v0.1.3`처럼 숫자 세 부분의 버전을 사용해야 합니다.
 
-Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. v0.1.2 공개 범위와 자동 검증·미완료 항목은 [v0.1.2 릴리스 노트](.github/release-notes-v0.1.2.md)에서 확인할 수 있습니다.
+Windows 설치, 포터블 압축 해제, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결과는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 기록합니다. v0.1.3 공개 범위와 자동 검증·미완료 항목은 [v0.1.3 릴리스 노트](.github/release-notes-v0.1.3.md)에서 확인할 수 있습니다.
 
 ## 개발 문서
 
@@ -82,9 +97,10 @@ Windows 설치, 실제 IME 전환, 트레이, 자동 실행, 제거 확인 결�
 - [트레이 콜백 라우팅 수정 계획](docs/superpowers/plans/2026-09-01-tray-callback-routing-fix.md)
 - [트레이 콜백 라우팅 수정 구현·검증 보고서](docs/superpowers/reports/2026-09-01-tray-callback-routing-fix.md)
 - [v0.1.2 릴리스 노트](.github/release-notes-v0.1.2.md)
+- [v0.1.3 릴리스 노트](.github/release-notes-v0.1.3.md)
 - [배포 진행 기록](docs/superpowers/reports/2026-09-01-release-progress.md)
 - [GitHub Pages 배포 계획](docs/plans/2026-09-01-github-pages-deploy.md)
 
 ## 제한 사항
 
-앱은 지정한 두 전역 단축키만 등록하며 키 입력 내용을 기록하거나 전송하지 않습니다. 관리자 권한 앱과의 입력 전달, 한국어 IME 설치 여부, Windows 로그인 후 동작은 Windows 환경에서 별도 확인이 필요합니다. 지원하지 않는 Windows ARM64·32비트 빌드, 임의 단축키, 자동 업데이트, 음성 기능은 범위에 포함되지 않습니다.
+앱은 지정한 두 전역 단축키만 등록하며 키 입력 내용을 기록하거나 전송하지 않습니다. 관리자 권한 앱과의 입력 전달, 한국어 IME 설치 여부, Windows 로그인 후 동작, 포터블 폴더 이동 후 자동 실행 경로는 Windows 환경에서 별도 확인이 필요합니다. 지원하지 않는 Windows ARM64·32비트 빌드, 임의 단축키, 자동 업데이트, 음성 기능은 범위에 포함되지 않습니다.

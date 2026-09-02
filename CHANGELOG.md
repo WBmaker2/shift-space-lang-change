@@ -1,5 +1,25 @@
 # 변경 기록
 
+## v0.1.3 — 2026-09-02
+
+### Added
+
+- 설치기 없이 압축을 풀어 실행할 수 있는 `ShiftSpaceLangChange-Portable-0.1.3-x64.zip` 배포 채널을 추가했습니다.
+- 포터블 ZIP 내부를 `ShiftSpaceLangChange.exe`와 `README-PORTABLE.txt`로 고정하고, 원본 release EXE와의 SHA-256 동일성을 Windows workflow에서 검증합니다.
+- 홍보 페이지에서 설치형(추천)과 포터블형(무설치)을 비교해 선택할 수 있는 다운로드 카드를 추가했습니다.
+- Windows package artifact에 설치기, 포터블 ZIP, 원본 EXE와 `SHA256SUMS.txt`를 함께 제공합니다.
+
+### Changed
+
+- 포터블은 설치 폴더·시작 메뉴·제거 프로그램을 만들지 않지만, 설정은 `HKCU`에 저장되고 선택적 자동 실행은 `HKCU Run` 키를 사용한다는 범위를 안내합니다.
+- 포터블 폴더를 먼저 압축 해제하고 실행해야 하며, 이동 후 자동 실행을 다시 설정하고 삭제 전 앱을 종료해야 한다는 절차를 문서화했습니다.
+- 다운로드 강조 애니메이션에 `prefers-reduced-motion` 대응을 추가했습니다.
+
+### Verification status
+
+- macOS에서는 PowerShell `Compress-Archive`와 Windows 실기기 동작을 완전히 검증할 수 없습니다. Windows runner가 패키지 생성·ZIP 구조·바이너리 동일성·SHA-256을 검증합니다.
+- Windows 10/11 x64 실기기 HVC는 아직 미검증입니다. 포터블 실행, 한국어 IME 전환, 트레이, 자동 실행 경로, 폴더 삭제는 [Windows HVC 기록지](docs/HVC-WINDOWS.md)에 별도로 기록합니다.
+
 ## v0.1.2 — 2026-09-01
 
 ### Fixed
