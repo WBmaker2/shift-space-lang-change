@@ -5,8 +5,6 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# The version is used in a file name, so reject path separators and shell-like
-# input before interpolating it into a path.
 if ($Version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$') {
     throw "Invalid package version: $Version"
 }
@@ -14,21 +12,124 @@ if ($Version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$') {
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $binary = Join-Path $repoRoot 'target\release\shift-space-lang-change.exe'
 $installer = Join-Path $repoRoot "dist\ShiftSpaceLangChange-Setup-$Version-x64.exe"
+$portable = Join-Path $repoRoot "dist\ShiftSpaceLangChange-Portable-$Version-x64.zip"
+$checksums = Join-Path $repoRoot 'dist\SHA256SUMS.txt'
+$packageName = "ShiftSpaceLangChange-Portable-$Version-x64"
 
-if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
-    throw "Missing release binary: $binary"
+foreach ($path in @($binary, $installer, $portable)) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        throw "Missing package output: $path"
+    }
+    if ((Get-Item -LiteralPath $path).Length -le 0) {
+        throw "Package output is empty: $path"
+    }
 }
 
-if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
-    throw "Missing installer: $installer"
+function Test-EntryMatchesFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$Entry,
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $entryStream = $Entry.Open()
+    $fileStream = [System.IO.File]::OpenRead($Path)
+    $entryBuffer = New-Object byte[] 65536
+    $fileBuffer = New-Object byte[] 65536
+    try {
+        while ($true) {
+            $entryRead = $entryStream.Read($entryBuffer, 0, $entryBuffer.Length)
+            $fileRead = $fileStream.Read($fileBuffer, 0, $fileBuffer.Length)
+            if ($entryRead -ne $fileRead) {
+                return $false
+            }
+            if ($entryRead -eq 0) {
+                return $true
+            }
+            for ($index = 0; $index -lt $entryRead; $index++) {
+                if ($entryBuffer[$index] -ne $fileBuffer[$index]) {
+                    return $false
+                }
+            }
+        }
+    }
+    finally {
+        $entryStream.Dispose()
+        $fileStream.Dispose()
+    }
 }
 
-if ((Get-Item -LiteralPath $binary).Length -le 0) {
-    throw 'Release binary is empty'
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::OpenRead($portable)
+try {
+    $entries = @($archive.Entries)
+    $fileEntries = @($entries | Where-Object { -not $_.FullName.EndsWith('/') })
+    if ($fileEntries.Count -ne 2) {
+        throw "Portable ZIP must contain exactly two files; found $($fileEntries.Count)"
+    }
+
+    $expectedFiles = @(
+        "$packageName/ShiftSpaceLangChange.exe",
+        "$packageName/README-PORTABLE.txt"
+    )
+    foreach ($entry in $entries) {
+        $entryName = $entry.FullName.Replace('\', '/')
+        $trimmed = $entryName.TrimEnd('/')
+        if ($trimmed -eq $packageName) {
+            continue
+        }
+        if (-not $entryName.StartsWith("$packageName/", [System.StringComparison]::Ordinal)) {
+            throw "Portable ZIP contains an unexpected root path: $($entry.FullName)"
+        }
+        if (-not $entry.FullName.EndsWith('/') -and $expectedFiles -notcontains $entryName) {
+            throw "Portable ZIP contains an unexpected file: $($entry.FullName)"
+        }
+        if ($entry.FullName.EndsWith('/') -and $trimmed -ne $packageName) {
+            throw "Portable ZIP contains an unexpected directory: $($entry.FullName)"
+        }
+    }
+
+    foreach ($expected in $expectedFiles) {
+        if (-not ($fileEntries.FullName.Replace('\', '/') -contains $expected)) {
+            throw "Portable ZIP is missing: $expected"
+        }
+    }
+
+    $readmeEntry = $entries | Where-Object {
+        $_.FullName.Replace('\', '/') -eq "$packageName/README-PORTABLE.txt"
+    } | Select-Object -First 1
+    if (-not $readmeEntry -or $readmeEntry.Length -le 0) {
+        throw 'Portable ZIP README-PORTABLE.txt is missing or empty'
+    }
+
+    $binaryEntry = $entries | Where-Object {
+        $_.FullName.Replace('\', '/') -eq "$packageName/ShiftSpaceLangChange.exe"
+    } | Select-Object -First 1
+    if (-not $binaryEntry) {
+        throw 'Portable ZIP executable entry was not found'
+    }
+    if ($binaryEntry.Length -ne (Get-Item -LiteralPath $binary).Length) {
+        throw 'Portable ZIP executable length differs from the release binary'
+    }
+
+    if (-not (Test-EntryMatchesFile -Entry $binaryEntry -Path $binary)) {
+        throw 'Portable ZIP executable differs from the release binary (byte comparison failed)'
+    }
+}
+finally {
+    $archive.Dispose()
 }
 
-if ((Get-Item -LiteralPath $installer).Length -le 0) {
-    throw 'Installer is empty'
+$hashLines = foreach ($path in @($binary, $installer, $portable)) {
+    $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-Host "SHA-256 $([System.IO.Path]::GetFileName($path)): $hash"
+    "$hash  $([System.IO.Path]::GetFileName($path))"
 }
 
-Write-Host "Verified $binary and $installer (version $Version)"
+Set-Content -LiteralPath $checksums -Value $hashLines -Encoding ascii
+if (-not (Test-Path -LiteralPath $checksums -PathType Leaf) -or (Get-Item -LiteralPath $checksums).Length -le 0) {
+    throw "Checksum manifest was not created: $checksums"
+}
+
+Write-Host "Verified installer, portable ZIP structure, identical executable, and checksums (version $Version)"
